@@ -88,7 +88,7 @@ function showScenarioLockedFlash(callback) {
   flash.className = 'screen-scenario-locked';
   flash.innerHTML = `
     <div class="locked-primary">CONFIGURATION COMPLETE</div>
-    <div class="locked-secondary">initializing simulation</div>
+    <div class="locked-secondary">initializing</div>
   `;
   document.body.appendChild(flash);
 

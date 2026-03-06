@@ -12,11 +12,10 @@
  */
 export function renderRunLoading(container, nTrials, onComplete) {
   const messages = [
-    '// PARSING THREAT MODEL...',
-    '// BUILDING ENGAGEMENT ARCHITECTURE...',
-    `// EXECUTING MONTE CARLO \u2014 ${nTrials} TRIALS`,
-    '// AGGREGATING INTERCEPT METRICS...',
-    '// ANALYSIS COMPLETE',
+    'Parsing model',
+    'Running Monte Carlo trials',
+    `Aggregating metrics (${nTrials} trials)`,
+    'Analysis complete',
   ];
 
   const el = document.createElement('div');

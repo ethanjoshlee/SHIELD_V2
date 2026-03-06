@@ -11,9 +11,9 @@ export function renderBoot(container) {
   el.innerHTML = `
     <div class="boot-ambient"></div>
     <canvas class="boot-canvas" width="300" height="300"></canvas>
-    <div class="boot-tag boot-tag-1">INITIALIZING SCENARIO ENGINE</div>
-    <div class="boot-tag boot-tag-2">LOADING ARCHITECTURE MODEL</div>
-    <div class="boot-tag boot-tag-3">CONFIGURING STRATEGIC ENVIRONMENT</div>
+    <div class="boot-tag boot-tag-1">INITIALIZING ENGINE</div>
+    <div class="boot-tag boot-tag-2">LOADING ARCHITECTURE</div>
+    <div class="boot-tag boot-tag-3">CONFIGURING ENVIRONMENT</div>
     <div class="boot-tag boot-tag-4">SIMULATION ONLINE</div>
   `;
   container.appendChild(el);

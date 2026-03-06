@@ -281,7 +281,7 @@ html, body {
 }
 
 .loading-lines .line.visible { opacity: 1; }
-.loading-lines .line.done { color: var(--accent-green); }
+.loading-lines .line.done { opacity: 0.6; }
 
 .loading-bar {
   width: 240px;
