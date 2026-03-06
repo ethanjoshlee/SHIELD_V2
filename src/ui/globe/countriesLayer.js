@@ -4,7 +4,8 @@
  */
 
 import * as THREE from 'three';
-import { COUNTRY_POLYGONS, WORLD_COASTLINES } from './geoData.js';
+import { COUNTRY_POLYGONS } from './geoData.js';
+import { WORLD_COASTLINES } from './worldPolygons.js';
 
 const TEX_W = 2048;
 const TEX_H = 1024;
@@ -23,7 +24,7 @@ function toPixel(lng, lat) {
 }
 
 /**
- * Draw a polygon on the canvas.
+ * Draw a polygon on the canvas (closed path).
  */
 function drawPolygon(points, opts = {}) {
   if (!points || points.length < 3) return;
@@ -48,6 +49,27 @@ function drawPolygon(points, opts = {}) {
 }
 
 /**
+ * Draw a line path on the canvas (open path, no fill).
+ */
+function drawPath(points, opts = {}) {
+  if (!points || points.length < 2) return;
+  ctx.beginPath();
+  const [x0, y0] = toPixel(points[0][0], points[0][1]);
+  ctx.moveTo(x0, y0);
+  for (let i = 1; i < points.length; i++) {
+    const [x, y] = toPixel(points[i][0], points[i][1]);
+    ctx.lineTo(x, y);
+  }
+  // No closePath — open line path
+
+  if (opts.stroke) {
+    ctx.strokeStyle = opts.stroke;
+    ctx.lineWidth = opts.lineWidth || 1;
+    ctx.stroke();
+  }
+}
+
+/**
  * Render the full texture.
  */
 function renderTexture() {
@@ -63,11 +85,11 @@ function renderTexture() {
     }
   }
 
-  // Draw world coastlines (faint)
-  for (const coastline of WORLD_COASTLINES) {
-    drawPolygon(coastline, {
-      stroke: 'rgba(200, 220, 255, 0.28)',
-      lineWidth: 2.5,
+  // Draw world coastlines (landmass silhouettes)
+  for (const ring of WORLD_COASTLINES) {
+    drawPolygon(ring, {
+      stroke: 'rgba(200, 220, 255, 0.32)',
+      lineWidth: 2,
     });
   }
 

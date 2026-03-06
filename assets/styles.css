@@ -215,8 +215,8 @@ html, body {
 }
 
 .globe-container-select {
-  width: clamp(220px, 24vw, 300px);
-  height: clamp(220px, 24vw, 300px);
+  width: clamp(250px, 28vw, 340px);
+  height: clamp(250px, 28vw, 340px);
   position: relative;
 }
 
