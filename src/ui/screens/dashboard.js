@@ -5,7 +5,7 @@
 
 import { STATES, transition, getStateData } from '../stateMachine.js';
 import { COUNTRIES } from '../../config/countries.js';
-import { initGlobe, startAnimation, stopAnimation, getGlobeGroup, getScene, disposeGlobe } from '../globe/globeCore.js';
+import { initGlobe, startAnimation, setupInteraction, stopAnimation, getGlobeGroup, getScene, disposeGlobe } from '../globe/globeCore.js';
 import { createCountriesLayer, setHighlightedCountries } from '../globe/countriesLayer.js';
 import { createHudOverlay } from '../globe/hudOverlay.js';
 import { renderDrawerControls, readParamsFromUI } from '../controls.js';
@@ -98,6 +98,7 @@ export function renderDashboard(container) {
   createHudOverlay(getScene());
   setHighlightedCountries([blueKey, redKey]);
   startAnimation();
+  setupInteraction(globeContainer);
 
   // Render drawer controls
   renderDrawerControls(

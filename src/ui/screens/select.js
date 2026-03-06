@@ -5,7 +5,7 @@
 
 import { STATES, transition } from '../stateMachine.js';
 import { COUNTRIES } from '../../config/countries.js';
-import { initGlobe, startAnimation, getGlobeGroup, getScene } from '../globe/globeCore.js';
+import { initGlobe, startAnimation, setupInteraction, getGlobeGroup, getScene } from '../globe/globeCore.js';
 import { createCountriesLayer, highlightCountry, unhighlightCountry, setHighlightedCountries, getCountryCenter } from '../globe/countriesLayer.js';
 import { createHudOverlay } from '../globe/hudOverlay.js';
 import { rotateToCountry } from '../globe/globeCore.js';
@@ -141,6 +141,7 @@ export function renderSelect(container) {
   createCountriesLayer(getGlobeGroup());
   createHudOverlay(getScene());
   startAnimation();
+  setupInteraction(globeContainer);
 
   // Event listeners
   el.addEventListener('click', (e) => {

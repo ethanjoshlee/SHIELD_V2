@@ -52,7 +52,7 @@ function drawPolygon(points, opts = {}) {
  */
 function renderTexture() {
   // Clear to dark
-  ctx.fillStyle = '#0d0d14';
+  ctx.fillStyle = '#0a0a0f';
   ctx.fillRect(0, 0, TEX_W, TEX_H);
 
   // Dot grid
@@ -66,8 +66,8 @@ function renderTexture() {
   // Draw world coastlines (faint)
   for (const coastline of WORLD_COASTLINES) {
     drawPolygon(coastline, {
-      stroke: 'rgba(255, 255, 255, 0.08)',
-      lineWidth: 1,
+      stroke: 'rgba(200, 220, 255, 0.18)',
+      lineWidth: 1.5,
     });
   }
 
@@ -86,7 +86,7 @@ function renderTexture() {
         });
       } else {
         drawPolygon(poly, {
-          stroke: 'rgba(255, 255, 255, 0.12)',
+          stroke: 'rgba(200, 220, 255, 0.2)',
           lineWidth: 1,
         });
       }
@@ -138,6 +138,19 @@ export function createCountriesLayer(globeGroup) {
 
   sphereMesh = new THREE.Mesh(geometry, material);
   globeGroup.add(sphereMesh);
+
+  // Atmospheric rim halo — soft blue glow at edges
+  const atmGeometry = new THREE.SphereGeometry(GLOBE_RADIUS * 1.05, 64, 48);
+  const atmMaterial = new THREE.MeshBasicMaterial({
+    color: 0x003366,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0.4,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const atmMesh = new THREE.Mesh(atmGeometry, atmMaterial);
+  globeGroup.add(atmMesh);
 
   renderTexture();
   return sphereMesh;
