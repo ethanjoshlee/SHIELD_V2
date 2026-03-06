@@ -78,8 +78,8 @@ export function renderResetLoading(container, onComplete) {
   el.innerHTML = `
     <div class="dot-grid"></div>
     <div class="reset-status">
-      <div class="reset-primary">// SCENARIO CLEARED</div>
-      <div class="reset-secondary">RETURNING TO SELECTION...</div>
+      <div class="reset-primary">CONFIGURATION CLEARED</div>
+      <div class="reset-secondary">returning to selection</div>
     </div>
   `;
   container.appendChild(el);

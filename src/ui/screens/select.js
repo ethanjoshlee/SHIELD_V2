@@ -87,8 +87,8 @@ function showScenarioLockedFlash(callback) {
   const flash = document.createElement('div');
   flash.className = 'screen-scenario-locked';
   flash.innerHTML = `
-    <div class="locked-primary">// SCENARIO CONFIRMED</div>
-    <div class="locked-secondary">ENTERING OPERATIONAL THEATER</div>
+    <div class="locked-primary">CONFIGURATION COMPLETE</div>
+    <div class="locked-secondary">initializing simulation</div>
   `;
   document.body.appendChild(flash);
 
@@ -122,7 +122,7 @@ export function renderSelect(container) {
     <div class="select-header">
       <h1>Strategic Homeland Intercept Evaluation<br>
       and Layered Defense Model</h1>
-      <div class="tagline">Select scenario parameters</div>
+      <div class="tagline">Select parameters</div>
     </div>
     <div class="select-body">
       ${buildList('blue', COUNTRIES.blue, 'blue')}
