@@ -66,8 +66,8 @@ function renderTexture() {
   // Draw world coastlines (faint)
   for (const coastline of WORLD_COASTLINES) {
     drawPolygon(coastline, {
-      stroke: 'rgba(200, 220, 255, 0.18)',
-      lineWidth: 1.5,
+      stroke: 'rgba(200, 220, 255, 0.28)',
+      lineWidth: 2.5,
     });
   }
 
@@ -86,8 +86,8 @@ function renderTexture() {
         });
       } else {
         drawPolygon(poly, {
-          stroke: 'rgba(200, 220, 255, 0.2)',
-          lineWidth: 1,
+          stroke: 'rgba(200, 220, 255, 0.26)',
+          lineWidth: 1.5,
         });
       }
     }
@@ -126,6 +126,8 @@ export function createCountriesLayer(globeGroup) {
   ctx = canvas.getContext('2d');
 
   texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
 
