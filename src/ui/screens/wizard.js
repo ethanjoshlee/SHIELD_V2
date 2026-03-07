@@ -16,8 +16,8 @@ import { createHudOverlay } from '../globe/hudOverlay.js';
 import { blueParamsHTML, redParamsHTML, simParamsHTML, readParamsFromUI } from '../controls.js';
 
 const STEPS = [
-  { key: 'blue', title: 'BLUE FORCE', subtitle: 'Defender capabilities', number: '01 / 03' },
-  { key: 'red',  title: 'RED FORCE', subtitle: 'Attacker payload', number: '02 / 03' },
+  { key: 'blue', title: 'SELECT BLUE', subtitle: 'Defending country and capabilities', number: '01 / 03' },
+  { key: 'red',  title: 'SELECT RED', subtitle: 'Attack profile', number: '02 / 03' },
   { key: 'sim',  title: 'SIMULATION', subtitle: 'Rules and reliability', number: '03 / 03' },
 ];
 
