@@ -6,10 +6,15 @@
 import * as THREE from 'three';
 import { COUNTRY_POLYGONS } from './geoData.js';
 import { WORLD_COASTLINES } from './worldPolygons.js';
+import { WORLD_COUNTRY_BORDERS } from './worldCountryBorders.js';
 
 const TEX_W = 2048;
 const TEX_H = 1024;
 const GLOBE_RADIUS = 180;
+const BORDER_STROKE = 'rgba(255, 170, 0, 0.20)';
+const BORDER_LINE_WIDTH = 0.85;
+const COAST_STROKE = 'rgba(255, 170, 0, 0.45)';
+const COAST_LINE_WIDTH = 1.7;
 
 let canvas, ctx, texture, sphereMesh;
 let highlightedCountries = new Set();
@@ -85,33 +90,34 @@ function renderTexture() {
     }
   }
 
-  // Draw world coastlines (landmass silhouettes)
-  for (const ring of WORLD_COASTLINES) {
-    drawPolygon(ring, {
-      stroke: 'rgba(200, 220, 255, 0.32)',
-      lineWidth: 2,
+  // Layer 1: country borders (subtle)
+  for (const borderLine of WORLD_COUNTRY_BORDERS) {
+    drawPath(borderLine, {
+      stroke: BORDER_STROKE,
+      lineWidth: BORDER_LINE_WIDTH,
     });
   }
 
-  // Draw country outlines and fills
+  // Layer 2: coastlines (primary)
+  for (const ring of WORLD_COASTLINES) {
+    drawPolygon(ring, {
+      stroke: COAST_STROKE,
+      lineWidth: COAST_LINE_WIDTH,
+    });
+  }
+
+  // Layer 3: selected-country overlays (topmost)
   for (const [key, data] of Object.entries(COUNTRY_POLYGONS)) {
     const isHighlighted = highlightedCountries.has(key);
+    if (!isHighlighted) continue;
 
     for (const poly of data.polygons) {
-      if (isHighlighted) {
-        // Glow fill
-        const [r, g, b] = data.color;
-        drawPolygon(poly, {
-          fill: `rgba(${r * 255}, ${g * 255}, ${b * 255}, 0.25)`,
-          stroke: `rgba(${r * 255}, ${g * 255}, ${b * 255}, 0.8)`,
-          lineWidth: 2,
-        });
-      } else {
-        drawPolygon(poly, {
-          stroke: 'rgba(200, 220, 255, 0.26)',
-          lineWidth: 1.5,
-        });
-      }
+      const [r, g, b] = data.color;
+      drawPolygon(poly, {
+        fill: `rgba(${r * 255}, ${g * 255}, ${b * 255}, 0.25)`,
+        stroke: `rgba(${r * 255}, ${g * 255}, ${b * 255}, 0.85)`,
+        lineWidth: 2.2,
+      });
     }
   }
 
