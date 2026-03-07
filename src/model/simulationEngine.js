@@ -10,14 +10,13 @@ import { clamp01, bernoulli } from '../utils/rng.js';
 import { generateTargets, generateMissiles, expandToWarheadsAndDecoys } from './scenarioBuilder.js';
 import { classifyTarget, engageWithType, engageTarget } from './engagement.js';
 import {
-  constellationCoverage,
-  boostAvailable,
   applyBoostEvasion,
   applyAsatDetectPenalty,
   applyAsatPkPenalty,
   isSpaceBased,
   sortByPriority,
 } from './rules.js';
+import { buildBoostScenario, discretizeBoostInventoryByType } from './scenarioLayer.js';
 
 // ---------------------------------------------------------------------------
 // Trial-level system degradation (common-mode reliability)
@@ -43,20 +42,228 @@ function applyTrialDegradation(params) {
   };
 }
 
+const BOOST_TYPES = ["boost_kinetic", "boost_laser"];
+
+function doctrineParamsFrom(params) {
+  return {
+    doctrineMode: params.doctrineMode,
+    shotsPerTarget: params.shotsPerTarget,
+    maxShotsPerTarget: params.maxShotsPerTarget,
+    pReengage: params.pReengage,
+  };
+}
+
+function hasBoostEngagementCapacity(boostScenario) {
+  return BOOST_TYPES.some((type) => {
+    const continuous = boostScenario.effectiveBoostInterceptorsPostAsatByType[type] ?? 0;
+    const pk = boostScenario.pkByType[type] ?? 0;
+    return continuous > 0 && pk > 0;
+  });
+}
+
+/**
+ * Boost phase abstraction:
+ * each class's discretized pool represents whole-missile engagement opportunities
+ * before MIRV separation.
+ */
+function runBoostPhaseOnMissiles({
+  missiles,
+  pDetectTrack,
+  doctrineParams,
+  inventoryByType,
+  pkByType,
+  boostEvasionPenalty,
+}) {
+  const inventory = { ...inventoryByType };
+  const survivingMissiles = [];
+
+  let boostMissilesEngaged = 0;
+  let boostMissilesKilled = 0;
+  let boostWarheadsDestroyed = 0;
+  let boostShotsFired = 0;
+
+  for (const missile of missiles) {
+    const detected = bernoulli(pDetectTrack);
+    if (!detected) {
+      survivingMissiles.push(missile);
+      continue;
+    }
+
+    boostMissilesEngaged++;
+    let killed = false;
+
+    for (const type of BOOST_TYPES) {
+      const inventoryCount = inventory[type] ?? 0;
+      if (inventoryCount <= 0) continue;
+
+      let pk = pkByType[type] ?? 0;
+      pk = applyBoostEvasion(pk, missile.boostEvasion ?? 0);
+      pk = applyBoostEvasion(pk, boostEvasionPenalty);
+
+      const res = engageWithType(missile, pk, doctrineParams, inventoryCount);
+      inventory[type] = res.inventoryRemaining;
+      boostShotsFired += res.shotsFired;
+
+      if (res.killed) {
+        killed = true;
+        break;
+      }
+    }
+
+    if (killed) {
+      boostMissilesKilled++;
+      boostWarheadsDestroyed += missile.mirvsPerMissile;
+    } else {
+      survivingMissiles.push(missile);
+    }
+  }
+
+  return {
+    survivingMissiles,
+    boostMissilesEngaged,
+    boostMissilesKilled,
+    boostWarheadsDestroyed,
+    boostShotsFired,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Legacy single-phase trial (backward compatible)
 // ---------------------------------------------------------------------------
 
 function runLegacyTrial(params) {
-  const { targets, realWarheads } = generateTargets(params);
-  const d = applyTrialDegradation(params);
+  const boostScenario = buildBoostScenario(params);
+  const boostEnabled = hasBoostEngagementCapacity(boostScenario);
 
+  // Neutral compatibility path: preserve existing legacy behavior.
+  if (!boostEnabled) {
+    const { targets, realWarheads } = generateTargets(params);
+    const d = applyTrialDegradation(params);
+
+    const pDetectTrack = d.pDetectTrack_trial;
+    const pkWarhead = clamp01(params.pkWarhead * d.pkDegradeFactor);
+    const pkDecoy = clamp01(params.pkDecoy * d.pkDegradeFactor);
+
+    let inventory = params.nInventory;
+
+    let penetratedRealWarheads = 0;
+    let interceptedRealWarheads = 0;
+    let detectedObjects = 0;
+    let detectedRealWarheads = 0;
+    let truePositives = 0;
+    let falseNegatives = 0;
+    let falsePositives = 0;
+    let shotsTotal = 0;
+    let shotsAtTrueWarheads = 0;
+    let shotsAtDecoys = 0;
+
+    for (const tgt of targets) {
+      const detected = bernoulli(pDetectTrack);
+      if (!detected) {
+        if (tgt.kind === "warhead") penetratedRealWarheads += 1;
+        continue;
+      }
+
+      detectedObjects += 1;
+      if (tgt.kind === "warhead") detectedRealWarheads += 1;
+
+      const classifiedAsWarhead = classifyTarget(tgt, params);
+
+      if (tgt.kind === "warhead") {
+        if (classifiedAsWarhead) truePositives += 1;
+        else falseNegatives += 1;
+      } else {
+        if (classifiedAsWarhead) falsePositives += 1;
+      }
+
+      if (!classifiedAsWarhead) {
+        if (tgt.kind === "warhead") penetratedRealWarheads += 1;
+        continue;
+      }
+
+      const engageParams = { ...params, pkWarhead, pkDecoy };
+      const res = engageTarget(tgt, engageParams, inventory);
+      inventory = res.inventoryRemaining;
+
+      shotsTotal += res.shotsFired;
+      if (tgt.kind === "warhead") shotsAtTrueWarheads += res.shotsFired;
+      else shotsAtDecoys += res.shotsFired;
+
+      if (tgt.kind === "warhead") {
+        if (res.killed) interceptedRealWarheads += 1;
+        else penetratedRealWarheads += 1;
+      }
+    }
+
+    return {
+      realWarheads,
+      penetratedRealWarheads,
+      interceptedRealWarheads,
+      detectedObjects,
+      detectedRealWarheads,
+      truePositives,
+      falseNegatives,
+      falsePositives,
+      shotsTotal,
+      shotsAtTrueWarheads,
+      shotsAtDecoys,
+      inventoryRemaining: inventory,
+      systemUp: d.systemUp,
+      // Multi-phase fields (zero for legacy)
+      boostMissilesEngaged: 0,
+      boostMissilesKilled: 0,
+      boostWarheadsDestroyed: 0,
+      midcourseWarheadsEngaged: 0,
+      midcourseWarheadsKilled: interceptedRealWarheads,
+      terminalWarheadsEngaged: 0,
+      terminalWarheadsKilled: 0,
+      ktDelivered: 0,
+      architectureCost_M: 0,
+    };
+  }
+
+  const d = applyTrialDegradation(params);
   const pDetectTrack = d.pDetectTrack_trial;
   const pkWarhead = clamp01(params.pkWarhead * d.pkDegradeFactor);
   const pkDecoy = clamp01(params.pkDecoy * d.pkDegradeFactor);
 
-  let inventory = params.nInventory;
+  // Continuous scenario values become discrete pools only at engagement resolution.
+  const boostInventoryDiscrete = discretizeBoostInventoryByType(
+    boostScenario.effectiveBoostInterceptorsPostAsatByType
+  );
+  const boostPkByType = {
+    boost_kinetic: clamp01(boostScenario.pkByType.boost_kinetic * d.pkDegradeFactor),
+    boost_laser: clamp01(boostScenario.pkByType.boost_laser * d.pkDegradeFactor),
+  };
 
+  const missiles = [];
+  for (let i = 0; i < params.nMissiles; i++) {
+    missiles.push({
+      id: `legacy_missile_${i}`,
+      kind: "missile",
+      mirvsPerMissile: params.mirvsPerMissile,
+      boostEvasion: 0,
+    });
+  }
+
+  const boostRes = runBoostPhaseOnMissiles({
+    missiles,
+    pDetectTrack,
+    doctrineParams: doctrineParamsFrom(params),
+    inventoryByType: boostInventoryDiscrete,
+    pkByType: boostPkByType,
+    boostEvasionPenalty: boostScenario.boostEvasionPenalty,
+  });
+
+  const postBoostParams =
+    boostRes.survivingMissiles.length === params.nMissiles
+      ? params
+      : { ...params, nMissiles: boostRes.survivingMissiles.length };
+
+  const { targets } = generateTargets(postBoostParams);
+  const realWarheads = params.nMissiles * params.mirvsPerMissile;
+
+  let inventory = params.nInventory;
   let penetratedRealWarheads = 0;
   let interceptedRealWarheads = 0;
   let detectedObjects = 0;
@@ -64,8 +271,8 @@ function runLegacyTrial(params) {
   let truePositives = 0;
   let falseNegatives = 0;
   let falsePositives = 0;
-  let shotsTotal = 0;
-  let shotsAtTrueWarheads = 0;
+  let shotsTotal = boostRes.boostShotsFired;
+  let shotsAtTrueWarheads = boostRes.boostShotsFired;
   let shotsAtDecoys = 0;
 
   for (const tgt of targets) {
@@ -120,12 +327,11 @@ function runLegacyTrial(params) {
     shotsAtDecoys,
     inventoryRemaining: inventory,
     systemUp: d.systemUp,
-    // Multi-phase fields (zero for legacy)
-    boostMissilesEngaged: 0,
-    boostMissilesKilled: 0,
-    boostWarheadsDestroyed: 0,
+    boostMissilesEngaged: boostRes.boostMissilesEngaged,
+    boostMissilesKilled: boostRes.boostMissilesKilled,
+    boostWarheadsDestroyed: boostRes.boostWarheadsDestroyed,
     midcourseWarheadsEngaged: 0,
-    midcourseWarheadsKilled: 0,
+    midcourseWarheadsKilled: interceptedRealWarheads,
     terminalWarheadsEngaged: 0,
     terminalWarheadsKilled: 0,
     ktDelivered: 0,
@@ -144,41 +350,36 @@ function runMultiPhaseTrial(params) {
   const asatDetectPenalty = params.countermeasures?.asatDetectPenalty ?? 0;
   const asatSpacePkPenalty = params.countermeasures?.asatSpacePkPenalty ?? 0;
   const pDetectTrack = applyAsatDetectPenalty(d.pDetectTrack_trial, asatDetectPenalty);
+  const boostScenario = buildBoostScenario(params);
 
   // --- Build per-type inventory and effective Pk ---
   const inventory = {};
   const effectivePk = {};
   const interceptorConfigs = params.interceptors;
-  const coverageFraction = constellationCoverage(
-    params.constellationAltitudeKm ?? 1000,
-    params.regionalCoverageFactor ?? 1.0
-  );
+  const boostInventoryContinuous = {};
 
   for (const [type, cfg] of Object.entries(interceptorConfigs)) {
-    let avail = cfg.deployed;
-
-    // Boost-phase space interceptors: limited by constellation coverage
+    // Keep boost inventory continuous in scenario-layer values until resolution.
     if (cfg.phase === "boost") {
-      avail = boostAvailable(cfg.deployed, coverageFraction);
+      const scenarioAvail = boostScenario.effectiveBoostInterceptorsPostAsatByType[type];
+      boostInventoryContinuous[type] = scenarioAvail != null ? scenarioAvail : cfg.deployed;
+      inventory[type] = 0;
+    } else {
+      inventory[type] = cfg.deployed;
     }
 
-    inventory[type] = avail;
-
-    // Compute effective Pk: base * system-degradation * ASAT-penalty (if space-based)
-    let pk = cfg.pk * d.pkDegradeFactor;
-    if (isSpaceBased(type)) {
+    // Compute effective Pk: base * system-degradation.
+    // ASAT Pk penalty is retained for non-boost space layers.
+    const scenarioPk = boostScenario.pkByType[type];
+    const basePk = cfg.phase === "boost" && scenarioPk != null ? scenarioPk : cfg.pk;
+    let pk = basePk * d.pkDegradeFactor;
+    if (isSpaceBased(type) && cfg.phase !== "boost") {
       pk = applyAsatPkPenalty(pk, asatSpacePkPenalty);
     }
     effectivePk[type] = clamp01(pk);
   }
 
-  // Doctrine params
-  const doctrineParams = {
-    doctrineMode: params.doctrineMode,
-    shotsPerTarget: params.shotsPerTarget,
-    maxShotsPerTarget: params.maxShotsPerTarget,
-    pReengage: params.pReengage,
-  };
+  const doctrineParams = doctrineParamsFrom(params);
 
   // Stats
   let totalRealWarheads = 0;
@@ -212,6 +413,10 @@ function runMultiPhaseTrial(params) {
     Object.keys(interceptorConfigs).filter(t => interceptorConfigs[t].phase === "boost"),
     interceptorConfigs
   );
+  const boostInventoryDiscrete = discretizeBoostInventoryByType(boostInventoryContinuous);
+  for (const type of boostTypes) {
+    inventory[type] = boostInventoryDiscrete[type] ?? 0;
+  }
 
   for (const missile of missiles) {
     // Detection in boost phase
@@ -228,8 +433,9 @@ function runMultiPhaseTrial(params) {
     for (const type of boostTypes) {
       if (inventory[type] <= 0) continue;
 
-      // Pk adjusted for this missile's boost evasion
-      const pk = applyBoostEvasion(effectivePk[type], missile.boostEvasion);
+      // Pk adjusted for missile-level and scenario-level boost evasion penalties.
+      let pk = applyBoostEvasion(effectivePk[type], missile.boostEvasion);
+      pk = applyBoostEvasion(pk, boostScenario.boostEvasionPenalty);
 
       const res = engageWithType(missile, pk, doctrineParams, inventory[type]);
       inventory[type] = res.inventoryRemaining;

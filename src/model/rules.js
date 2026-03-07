@@ -1,31 +1,8 @@
 /**
- * Phase sequencing, constellation coverage, and countermeasure penalty logic.
+ * Phase sequencing and countermeasure penalty logic.
  */
 
 import { clamp01 } from '../utils/rng.js';
-
-const R_EARTH = 6371; // km
-
-/**
- * Compute the fraction of a LEO constellation covering a launch region.
- * Formula: (1 - cos(theta)) / 2, theta = arccos(R_earth / (R_earth + altitude))
- *
- * @param {number} altitudeKm — orbit altitude in km (default 1000)
- * @param {number} regionalFactor — geographic modifier (0–1, default 1.0)
- * @returns {number} fraction of constellation in position (e.g., ~0.067 at 1000km)
- */
-export function constellationCoverage(altitudeKm = 1000, regionalFactor = 1.0) {
-  const theta = Math.acos(R_EARTH / (R_EARTH + altitudeKm));
-  const baseFraction = (1 - Math.cos(theta)) / 2;
-  return clamp01(baseFraction * regionalFactor);
-}
-
-/**
- * Compute available boost-phase interceptors from deployed count and coverage.
- */
-export function boostAvailable(deployed, coverageFraction) {
-  return Math.max(0, Math.floor(deployed * coverageFraction));
-}
 
 /**
  * Apply boost-evasion penalty to an interceptor's Pk.

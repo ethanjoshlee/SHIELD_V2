@@ -3,6 +3,16 @@
  */
 
 import { clamp01 } from '../utils/rng.js';
+import { COUNTRIES } from '../config/countries.js';
+import { LAUNCH_REGION_ORDER, LAUNCH_REGION_PRESETS } from '../config/launchRegions.js';
+
+function launchRegionOptionsHTML(selected) {
+  return LAUNCH_REGION_ORDER.map((key) => {
+    const label = LAUNCH_REGION_PRESETS[key]?.label ?? key;
+    const isSelected = key === selected ? 'selected' : '';
+    return `<option value="${key}" ${isSelected}>${label}</option>`;
+  }).join('');
+}
 
 
 /**
@@ -12,6 +22,9 @@ import { clamp01 } from '../utils/rng.js';
  * @param {string} redKey - Optional country key for attacker
  */
 export function readParamsFromUI(blueKey, redKey, root = document) {
+  const bluePreset = blueKey ? COUNTRIES.blue[blueKey] : null;
+  const redPreset = redKey ? COUNTRIES.red[redKey] : null;
+
   const getValue = (id, param, defaultVal) => {
     let el = document.getElementById(id);
     if (!el) el = root.querySelector(`[data-param="${param}"]`);
@@ -44,6 +57,72 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
   const pkDecoy = clamp01(parseFloat(getValue("pkDecoy", "pkDecoy", 0.8)) || 0);
 
   const nInventory = Math.max(0, parseInt(getValue("nInventory", "nInventory", 0), 10) || 0);
+
+  const nSpaceBoostKinetic = Math.max(
+    0,
+    parseInt(
+      getValue(
+        "nSpaceBoostKinetic",
+        "nSpaceBoostKinetic",
+        bluePreset?.nSpaceBoostKinetic ?? bluePreset?.interceptors?.boost_kinetic?.deployed ?? 0
+      ),
+      10
+    ) || 0
+  );
+  const pkSpaceBoostKinetic = clamp01(
+    parseFloat(
+      getValue(
+        "pkSpaceBoostKinetic",
+        "pkSpaceBoostKinetic",
+        bluePreset?.pkSpaceBoostKinetic ?? bluePreset?.interceptors?.boost_kinetic?.pk ?? 0.5
+      )
+    ) || 0
+  );
+  const nSpaceBoostDirected = Math.max(
+    0,
+    parseInt(
+      getValue(
+        "nSpaceBoostDirected",
+        "nSpaceBoostDirected",
+        bluePreset?.nSpaceBoostDirected ?? bluePreset?.interceptors?.boost_laser?.deployed ?? 0
+      ),
+      10
+    ) || 0
+  );
+  const pkSpaceBoostDirected = clamp01(
+    parseFloat(
+      getValue(
+        "pkSpaceBoostDirected",
+        "pkSpaceBoostDirected",
+        bluePreset?.pkSpaceBoostDirected ?? bluePreset?.interceptors?.boost_laser?.pk ?? 0.4
+      )
+    ) || 0
+  );
+
+  const launchRegion = getValue(
+    "launchRegion",
+    "launchRegion",
+    redPreset?.launchRegion ?? "default"
+  );
+  const asatSpaceAvailabilityPenalty = clamp01(
+    parseFloat(
+      getValue(
+        "asatSpaceAvailabilityPenalty",
+        "asatSpaceAvailabilityPenalty",
+        redPreset?.asatSpaceAvailabilityPenalty ?? redPreset?.countermeasures?.asatSpaceAvailabilityPenalty ?? 0
+      )
+    ) || 0
+  );
+  const boostEvasionPenalty = clamp01(
+    parseFloat(
+      getValue(
+        "boostEvasionPenalty",
+        "boostEvasionPenalty",
+        redPreset?.boostEvasionPenalty ?? 0
+      )
+    ) || 0
+  );
+
   const nTrials = Math.max(1, parseInt(getValue("nTrials", "nTrials", 1000), 10) || 1000);
 
   const pSystemUp = clamp01(parseFloat(getValue("pSystemUp", "pSystemUp", 0.9)) || 0);
@@ -67,6 +146,13 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     pkWarhead,
     pkDecoy,
     nInventory,
+    nSpaceBoostKinetic,
+    pkSpaceBoostKinetic,
+    nSpaceBoostDirected,
+    pkSpaceBoostDirected,
+    launchRegion,
+    asatSpaceAvailabilityPenalty,
+    boostEvasionPenalty,
     nTrials,
     pSystemUp,
     detectDegradeFactor,
@@ -77,7 +163,7 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
   };
 }
 
-function probSlider(label, param, pct, defaultPct) {
+function probSlider(label, param, pct, defaultPct, minPct = 0.1) {
   const v = defaultPct ?? pct;
   return `
     <div class="wizard-slider-row">
@@ -85,7 +171,7 @@ function probSlider(label, param, pct, defaultPct) {
         <span class="wizard-slider-label">${label}</span>
         <span class="wizard-slider-value">${parseFloat(v).toFixed(1)}%</span>
       </div>
-      <input type="range" class="wizard-slider" min="0.1" max="99.9" step="0.1" value="${v}" data-prob-target="${param}" />
+      <input type="range" class="wizard-slider" min="${minPct}" max="99.9" step="0.1" value="${v}" data-prob-target="${param}" />
       <input type="number" class="wizard-hidden-param" data-param="${param}" value="${(v / 100).toFixed(4)}" tabindex="-1" aria-hidden="true" />
     </div>`;
 }
@@ -112,6 +198,8 @@ export function blueParamsHTML(d) {
   const pkw  = (d.pkWarhead * 100).toFixed(1);
   const pkd  = (d.pkDecoy * 100).toFixed(1);
   const pre  = (d.pReengage * 100).toFixed(1);
+  const pkbK = ((d.pkSpaceBoostKinetic ?? 0.5) * 100).toFixed(1);
+  const pkbD = ((d.pkSpaceBoostDirected ?? 0.4) * 100).toFixed(1);
   return `
     <div class="wizard-param-group">
       <div class="wizard-param-pair">
@@ -120,11 +208,19 @@ export function blueParamsHTML(d) {
       </div>
       <div class="wizard-param-pair">
         ${probSlider('Decoy misclassification rate', 'pFalseAlarmDecoy', pfa)}
-        ${probSlider('Per shot kill probability for decoys', 'pkDecoy', pkd)}
+        ${intSlider('Ground-based interceptors in engagement range', 'nInventory', 10, 2000, 1, d.nInventory)}
       </div>
       <div class="wizard-param-pair">
-        ${probSlider('Per shot kill probability for warheads', 'pkWarhead', pkw)}
-        ${intSlider('Interceptors in engagement range', 'nInventory', 10, 2000, 10, d.nInventory)}
+        ${probSlider('Ground-based interceptor per shot kill probability for warheads', 'pkWarhead', pkw)}
+        ${probSlider('Ground-based interceptor per shot kill probability for decoys', 'pkDecoy', pkd)}
+      </div>
+      <div class="wizard-param-pair">
+        ${intSlider('Space-based kinetic boost interceptors deployed', 'nSpaceBoostKinetic', 0, 4000, 1, d.nSpaceBoostKinetic ?? 0)}
+        ${probSlider('Space-based kinetic boost interceptor kill probability', 'pkSpaceBoostKinetic', pkbK)}
+      </div>
+      <div class="wizard-param-pair">
+        ${intSlider('Space-based directed-energy boost interceptors deployed', 'nSpaceBoostDirected', 0, 4000, 1, d.nSpaceBoostDirected ?? 0)}
+        ${probSlider('Space-based directed-energy boost interceptor kill probability', 'pkSpaceBoostDirected', pkbD)}
       </div>
       <div class="wizard-slider-row">
         <div class="wizard-slider-header">
@@ -154,6 +250,9 @@ export function blueParamsHTML(d) {
  */
 export function redParamsHTML(d) {
   const decoysPerMissile = d.decoysPerMissile ?? (d.decoysPerWarhead * d.mirvsPerMissile).toFixed(1);
+  const asatAvail = ((d.asatSpaceAvailabilityPenalty ?? 0) * 100).toFixed(1);
+  const boostEvade = ((d.boostEvasionPenalty ?? 0) * 100).toFixed(1);
+  const launchRegion = d.launchRegion ?? 'default';
   return `
     <div class="wizard-param-group">
       <div class="wizard-param-pair">
@@ -161,6 +260,18 @@ export function redParamsHTML(d) {
         ${intSlider('Warheads per missile', 'mirvsPerMissile', 1, 16, 1, d.mirvsPerMissile)}
       </div>
       ${intSlider('Decoys per missile', 'decoysPerMissile', 0, 40, 1, decoysPerMissile)}
+      <div class="wizard-slider-row">
+        <div class="wizard-slider-header">
+          <span class="wizard-slider-label">Launch region preset</span>
+        </div>
+        <select class="wizard-select" data-param="launchRegion">
+          ${launchRegionOptionsHTML(launchRegion)}
+        </select>
+      </div>
+      <div class="wizard-param-pair">
+        ${probSlider('Anti-satellite attack impact on space-based boost interceptor availability', 'asatSpaceAvailabilityPenalty', asatAvail, undefined, 0)}
+        ${probSlider('Missile survivability impact on boost-phase interception', 'boostEvasionPenalty', boostEvade, undefined, 0)}
+      </div>
     </div>
   `;
 }
@@ -191,7 +302,7 @@ export function simParamsHTML(d) {
  * Render the dashboard drawer controls panel (tabs for Blue, Red, CM, Sim).
  */
 export function renderDrawerControls(container, blueKey, redKey) {
-  const d = readParamsFromUI();
+  const d = readParamsFromUI(blueKey, redKey);
 
   container.innerHTML = `
     <div class="tab-panel active" id="tab-blue">
@@ -212,16 +323,32 @@ export function renderDrawerControls(container, blueKey, redKey) {
             <input type="number" class="param-input" data-param="pFalseAlarmDecoy" min="0" max="1" step="0.01" value="${d.pFalseAlarmDecoy}" />
           </label>
           <label>
-            Pk per shot (warhead):
+            Ground-based interceptor per shot kill probability for warheads:
             <input type="number" class="param-input" data-param="pkWarhead" min="0" max="1" step="0.01" value="${d.pkWarhead}" />
           </label>
           <label>
-            Pk per shot (decoy):
+            Ground-based interceptor per shot kill probability for decoys:
             <input type="number" class="param-input" data-param="pkDecoy" min="0" max="1" step="0.01" value="${d.pkDecoy}" />
           </label>
           <label>
-            Interceptor Inventory:
+            Ground-based interceptors in engagement range:
             <input type="number" class="param-input" data-param="nInventory" min="0" step="1" value="${d.nInventory}" />
+          </label>
+          <label>
+            Space-based kinetic boost interceptors deployed:
+            <input type="number" class="param-input" data-param="nSpaceBoostKinetic" min="0" step="1" value="${d.nSpaceBoostKinetic ?? 0}" />
+          </label>
+          <label>
+            Space-based kinetic boost interceptor kill probability:
+            <input type="number" class="param-input" data-param="pkSpaceBoostKinetic" min="0" max="1" step="0.01" value="${d.pkSpaceBoostKinetic ?? 0.5}" />
+          </label>
+          <label>
+            Space-based directed-energy boost interceptors deployed:
+            <input type="number" class="param-input" data-param="nSpaceBoostDirected" min="0" step="1" value="${d.nSpaceBoostDirected ?? 0}" />
+          </label>
+          <label>
+            Space-based directed-energy boost interceptor kill probability:
+            <input type="number" class="param-input" data-param="pkSpaceBoostDirected" min="0" max="1" step="0.01" value="${d.pkSpaceBoostDirected ?? 0.4}" />
           </label>
         </div>
       </div>
@@ -243,6 +370,20 @@ export function renderDrawerControls(container, blueKey, redKey) {
           <label>
             Decoys per Warhead:
             <input type="number" class="param-input" data-param="decoysPerWarhead" min="0" step="1" value="${d.decoysPerWarhead}" />
+          </label>
+          <label>
+            Launch region preset:
+            <select class="param-input" data-param="launchRegion">
+              ${launchRegionOptionsHTML(d.launchRegion ?? 'default')}
+            </select>
+          </label>
+          <label>
+            Anti-satellite attack impact on space-based boost interceptor availability:
+            <input type="number" class="param-input" data-param="asatSpaceAvailabilityPenalty" min="0" max="1" step="0.01" value="${d.asatSpaceAvailabilityPenalty ?? 0}" />
+          </label>
+          <label>
+            Missile survivability impact on boost-phase interception:
+            <input type="number" class="param-input" data-param="boostEvasionPenalty" min="0" max="1" step="0.01" value="${d.boostEvasionPenalty ?? 0}" />
           </label>
         </div>
       </div>

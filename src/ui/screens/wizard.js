@@ -10,6 +10,7 @@
 import { STATES } from '../stateMachine.js';
 import { COUNTRIES } from '../../config/countries.js';
 import { DEFAULTS } from '../../state.js';
+import { LAUNCH_REGION_PRESETS } from '../../config/launchRegions.js';
 import { initGlobe, startAnimation, setupInteraction, getGlobeGroup, getScene, rotateToCountry } from '../globe/globeCore.js';
 import { createCountriesLayer, setHighlightedCountries, getCountryCenter } from '../globe/countriesLayer.js';
 import { createHudOverlay } from '../globe/hudOverlay.js';
@@ -96,6 +97,20 @@ export function renderWizard(container, transitionFn) {
     const side = item.dataset.side;
     const key  = item.dataset.key;
 
+    const setParamValue = (param, val) => {
+      const probRange = el.querySelector(`[data-prob-target="${param}"]`);
+      if (probRange) {
+        probRange.value = (parseFloat(val) * 100).toFixed(1);
+        probRange.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      const input = el.querySelector(`[data-param="${param}"]`);
+      if (!input) return;
+      input.value = String(val);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
     const list = item.closest('.wizard-country-section');
     list.querySelectorAll(`.wizard-country-item[data-side="${side}"]`).forEach(i => {
       i.classList.remove('selected', side);
@@ -104,8 +119,33 @@ export function renderWizard(container, transitionFn) {
 
     if (side === 'blue') {
       selectedBlue = key;
+      const blue = COUNTRIES.blue[key];
+      if (blue) {
+        const mappings = [
+          ['nSpaceBoostKinetic', blue.nSpaceBoostKinetic ?? blue.interceptors?.boost_kinetic?.deployed],
+          ['pkSpaceBoostKinetic', blue.pkSpaceBoostKinetic ?? blue.interceptors?.boost_kinetic?.pk],
+          ['nSpaceBoostDirected', blue.nSpaceBoostDirected ?? blue.interceptors?.boost_laser?.deployed],
+          ['pkSpaceBoostDirected', blue.pkSpaceBoostDirected ?? blue.interceptors?.boost_laser?.pk],
+        ];
+        for (const [param, val] of mappings) {
+          if (val === undefined || val === null) continue;
+          setParamValue(param, val);
+        }
+      }
     } else {
       selectedRed = key;
+      const red = COUNTRIES.red[key];
+      if (red) {
+        const launchRegion = red.launchRegion && LAUNCH_REGION_PRESETS[red.launchRegion] ? red.launchRegion : 'default';
+        const mappings = [
+          ['launchRegion', launchRegion],
+          ['asatSpaceAvailabilityPenalty', red.asatSpaceAvailabilityPenalty ?? red.countermeasures?.asatSpaceAvailabilityPenalty ?? 0],
+          ['boostEvasionPenalty', red.boostEvasionPenalty ?? 0],
+        ];
+        for (const [param, val] of mappings) {
+          setParamValue(param, val);
+        }
+      }
     }
 
     const center = getCountryCenter(key);
