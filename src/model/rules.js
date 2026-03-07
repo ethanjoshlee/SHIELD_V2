@@ -51,31 +51,12 @@ export function applyAsatPkPenalty(pk, asatSpacePkPenalty) {
 }
 
 /**
- * ASAT effect lookup table.
- */
-export const ASAT_EFFECTS = {
-  none:         { detectPenalty: 0.00, spacePkPenalty: 0.00 },
-  conventional: { detectPenalty: 0.10, spacePkPenalty: 0.15 },
-  nuclear:      { detectPenalty: 0.25, spacePkPenalty: 0.30 },
-};
-
-/**
  * Returns true if an interceptor type is space-based (affected by ASAT).
  */
 export function isSpaceBased(interceptorType) {
   return interceptorType.startsWith("boost_") ||
          interceptorType === "midcourse_kinetic" ||
          interceptorType === "midcourse_laser";
-}
-
-/**
- * Get the phase for an interceptor type.
- */
-export function interceptorPhase(interceptorType) {
-  if (interceptorType.startsWith("boost_")) return "boost";
-  if (interceptorType.startsWith("midcourse_")) return "midcourse";
-  if (interceptorType.startsWith("terminal_")) return "terminal";
-  return "unknown";
 }
 
 /**

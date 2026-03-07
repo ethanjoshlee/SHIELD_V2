@@ -40,8 +40,6 @@ export function runMonteCarlo(params) {
   const ktDelivered = [];
 
   let realWarheadsConst = null;
-  let totalMissiles = null;
-
   for (let t = 0; t < nTrials; t++) {
     const r = runOneTrial(params);
     if (realWarheadsConst === null) realWarheadsConst = r.realWarheads;

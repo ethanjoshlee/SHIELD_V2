@@ -1,7 +1,6 @@
 /**
  * UI State Machine — manages screen transitions.
- * States: BOOT → SELECT → LOADING → DASHBOARD
- *         DASHBOARD → SELECT (reset)
+ * State keys are shared across boot, setup, loading, dashboard, and results screens.
  */
 
 const STATES = { BOOT: 'boot', SELECT: 'select', WIZARD: 'wizard', LOADING: 'loading', DASHBOARD: 'dashboard', RESULTS: 'results' };
@@ -10,7 +9,6 @@ let currentState = null;
 let stateData = {};
 const listeners = [];
 
-export function getState() { return currentState; }
 export function getStateData() { return stateData; }
 
 export function onStateChange(fn) { listeners.push(fn); }

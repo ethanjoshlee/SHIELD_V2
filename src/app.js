@@ -1,7 +1,6 @@
 /**
  * SHIELD — App entry point.
- * Uses state machine to transition: BOOT → WIZARD → LOADING → DASHBOARD
- * (Old SELECT flow also available for compatibility)
+ * Uses state machine transitions across boot, setup, loading, and results views.
  */
 
 import { STATES, transition, onStateChange } from './ui/stateMachine.js';

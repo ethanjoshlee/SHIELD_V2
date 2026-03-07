@@ -1,13 +1,9 @@
 /**
  * Global app state and default parameter values.
- *
- * Legacy flat params are used when the old UI is active.
- * Multi-phase params (interceptors, missileClasses, countermeasures)
- * are populated when country presets are selected.
  */
 
 export const DEFAULTS = {
-  // --- Legacy flat params (backward compatible) ---
+  // --- Core scalar params ---
   nMissiles: 80,
   mirvsPerMissile: 5,
   decoysPerWarhead: 2,

@@ -193,11 +193,6 @@ export function unhighlightCountry(countryKey) {
   renderTexture();
 }
 
-export function clearHighlights() {
-  highlightedCountries.clear();
-  renderTexture();
-}
-
 export function setHighlightedCountries(keys) {
   highlightedCountries = new Set(keys);
   renderTexture();

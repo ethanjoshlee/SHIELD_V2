@@ -162,10 +162,3 @@ export function renderSelect(container) {
     el.classList.add('active');
   });
 }
-
-export function removeSelect() {
-  if (el) {
-    el.remove();
-    el = null;
-  }
-}

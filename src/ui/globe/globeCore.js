@@ -70,9 +70,6 @@ export function initGlobe(container) {
 
 export function getGlobeGroup() { return globeGroup; }
 export function getScene() { return scene; }
-export function getCamera() { return camera; }
-
-export function setAutoRotate(val) { autoRotate = val; }
 
 export function startAnimation() {
   if (animationId) return;
@@ -105,7 +102,7 @@ export function startAnimation() {
   loop();
 }
 
-export function stopAnimation() {
+function stopAnimation() {
   if (animationId) {
     cancelAnimationFrame(animationId);
     animationId = null;

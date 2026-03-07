@@ -253,8 +253,7 @@ function runMultiPhaseTrial(params) {
   // ===================================================================
   // MIDCOURSE PHASE — target: individual warheads + decoys
   // ===================================================================
-  const { targets: midcourseTargets, realWarheads: midcourseRealWarheads, decoys: midcourseDecoys } =
-    expandToWarheadsAndDecoys(survivingMissiles);
+  const { targets: midcourseTargets } = expandToWarheadsAndDecoys(survivingMissiles);
 
   // Count total real warheads across all missiles (for stats)
   for (const m of missiles) {
@@ -328,8 +327,6 @@ function runMultiPhaseTrial(params) {
   // ===================================================================
   // TERMINAL PHASE — warheads only (decoys mostly burn up during reentry)
   // ===================================================================
-  const pDecoyBurnup = params.pDecoyBurnup ?? 0.7;
-
   // Get terminal interceptor types sorted by cost
   const terminalTypes = sortByPriority(
     Object.keys(interceptorConfigs).filter(t => interceptorConfigs[t].phase === "terminal"),
@@ -389,19 +386,7 @@ function runMultiPhaseTrial(params) {
   for (const m of missiles) {
     totalKt += m.mirvsPerMissile * m.yieldKt;
   }
-  let interceptedKt = 0;
-  // Boost kills: each killed missile's full warhead yield
-  interceptedKt += boostWarheadsDestroyed > 0
-    ? (totalKt / totalRealWarheads) * boostWarheadsDestroyed // weighted approx
-    : 0;
-  // Actually, boost kills are per-missile, so we need the actual missiles killed.
-  // Let's just compute ktDelivered = totalKt * (penetratedRealWarheads / totalRealWarheads)
-  // This is an approximation when yields differ across classes.
-
-  // Better approach: track ktDelivered directly
-  // ktDelivered = sum of yieldKt for each penetrated warhead
-  // We need to know which warheads penetrated. Let's accumulate in the loop.
-  // For now, use the average yield approach (will be exact when all same yield).
+  // Use average-yield approximation: exact when all warheads have the same yield.
   const avgYieldKt = totalRealWarheads > 0 ? totalKt / totalRealWarheads : 0;
   const ktDelivered = penetratedRealWarheads * avgYieldKt;
 
