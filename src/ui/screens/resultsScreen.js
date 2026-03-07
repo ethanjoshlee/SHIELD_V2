@@ -1,6 +1,6 @@
 /**
  * RESULTS screen — read-only final results presentation after simulation.
- * 60/40 layout: left panel shows scenario + metrics, right panel shows globe.
+ * 40/60 layout: left panel shows scenario + metrics, right panel shows globe.
  * Globe persists in same style as wizard, with both countries highlighted.
  * RESET button returns to wizard step 1 (fresh configuration).
  */

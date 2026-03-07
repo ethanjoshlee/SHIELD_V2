@@ -8,9 +8,10 @@
 
 export const DEFAULTS = {
   // --- Legacy flat params (backward compatible) ---
-  nMissiles: 20,
+  nMissiles: 80,
   mirvsPerMissile: 5,
   decoysPerWarhead: 2,
+  decoysPerMissile: 15,
   pDetectTrack: 0.80,
   pClassifyWarhead: 0.80,
   pFalseAlarmDecoy: 0.20,

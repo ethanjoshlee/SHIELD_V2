@@ -39,6 +39,12 @@ export function renderWizard(container, transitionFn) {
     return items.join('');
   }
 
+  function updateDoctrineGating() {
+    const mode = el.querySelector('[data-param="doctrineMode"]')?.value ?? 'barrage';
+    el.querySelectorAll('.doctrine-barrage-only').forEach(r => { r.style.display = mode === 'barrage' ? '' : 'none'; });
+    el.querySelectorAll('.doctrine-sls-only').forEach(r => { r.style.display = mode === 'sls' ? '' : 'none'; });
+  }
+
   function updateStepDisplay() {
     const step = STEPS[currentStep];
 
@@ -53,6 +59,13 @@ export function renderWizard(container, transitionFn) {
     paramSections.forEach((section, i) => {
       section.classList.toggle('active', i === currentStep);
     });
+
+    // Country-gating: params hidden until the step's country is selected
+    const paramsContainer = el.querySelector('.wizard-params-container');
+    const stepHasCountry = currentStep === 0 ? !!selectedBlue
+                         : currentStep === 1 ? !!selectedRed
+                         : true;
+    paramsContainer.classList.toggle('unlocked', stepHasCountry);
 
     const btnBack = el.querySelector('.btn-back');
     const btnNext = el.querySelector('.btn-next');
@@ -141,6 +154,30 @@ export function renderWizard(container, transitionFn) {
   container.appendChild(el);
   requestAnimationFrame(() => el.classList.add('active'));
 
+  // Wire sliders — sync range → value span (and hidden prob input where applicable)
+  el.querySelectorAll('[data-prob-target]').forEach(range => {
+    const paramId = range.dataset.probTarget;
+    const hidden = el.querySelector(`[data-param="${paramId}"]`);
+    const valueEl = range.closest('.wizard-slider-row').querySelector('.wizard-slider-value');
+    const sync = () => {
+      if (valueEl) valueEl.textContent = parseFloat(range.value).toFixed(1) + '%';
+      if (hidden) hidden.value = (parseFloat(range.value) / 100).toFixed(4);
+    };
+    range.addEventListener('input', sync);
+    sync();
+  });
+  el.querySelectorAll('input[type="range"][data-param]').forEach(range => {
+    const valueEl = range.closest('.wizard-slider-row')?.querySelector('.wizard-slider-value');
+    if (!valueEl) return;
+    const sync = () => { valueEl.textContent = range.value; };
+    range.addEventListener('input', sync);
+    sync();
+  });
+
+  // Doctrine gating — initial + on change
+  updateDoctrineGating();
+  el.querySelector('[data-param="doctrineMode"]')?.addEventListener('change', updateDoctrineGating);
+
   // Globe — fresh init per invocation
   const globeContainer = el.querySelector('.wizard-right');
   initGlobe(globeContainer);
@@ -174,7 +211,7 @@ export function renderWizard(container, transitionFn) {
   });
 
   btnRun.addEventListener('click', () => {
-    const params = readParamsFromUI(selectedBlue, selectedRed);
+    const params = readParamsFromUI(selectedBlue, selectedRed, el);
     transitionFn(STATES.LOADING, {
       action: 'run',
       fromWizard: true,

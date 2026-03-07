@@ -9,48 +9,49 @@ export function renderResultsContent(params, result) {
   const s = result.summary;
 
   const realWarheads = params.nMissiles * params.mirvsPerMissile;
+  const decoysPerMissile = params.decoysPerWarhead * params.mirvsPerMissile;
   const decoys = realWarheads * params.decoysPerWarhead;
   const totalObjects = realWarheads + decoys;
 
   const doctrineLine =
     params.doctrineMode === "barrage"
-      ? `Barrage, ${params.shotsPerTarget} shots/track`
-      : `SLS, max ${params.maxShotsPerTarget} shots/track, P(re-engage)=${fmt(params.pReengage, 2)}`;
+      ? `Barrage, ${params.shotsPerTarget} shots per warhead`
+      : `SLS, max ${params.maxShotsPerTarget} shots per warhead, P(re-engage)=${fmt(params.pReengage, 2)}`;
 
   let html = `
     <div class="results-content">
       <h3>Inputs</h3>
       <div class="results-grid">
         <div class="result-item">
-          <span class="label">Missiles:</span>
+          <span class="label">Ballistic missiles:</span>
           <span class="value">${params.nMissiles}</span>
         </div>
         <div class="result-item">
-          <span class="label">MIRVs/Missile:</span>
+          <span class="label">Warheads per missile:</span>
           <span class="value">${params.mirvsPerMissile}</span>
         </div>
         <div class="result-item">
-          <span class="label">Decoys/Warhead:</span>
-          <span class="value">${params.decoysPerWarhead}</span>
+          <span class="label">Decoys per missile:</span>
+          <span class="value">${decoysPerMissile.toFixed(1)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Real Warheads:</span>
+          <span class="label">Real warheads total:</span>
           <span class="value" style="color: var(--accent-red);">${realWarheads}</span>
         </div>
         <div class="result-item">
-          <span class="label">Total Objects:</span>
+          <span class="label">Total objects:</span>
           <span class="value">${totalObjects}</span>
         </div>
         <div class="result-item">
-          <span class="label">Detection P:</span>
+          <span class="label">Detection and tracking:</span>
           <span class="value">${fmt(params.pDetectTrack, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Classifier TPR:</span>
+          <span class="label">Warhead classification accuracy:</span>
           <span class="value">${fmt(params.pClassifyWarhead, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Classifier FPR:</span>
+          <span class="label">Decoy misclassification rate:</span>
           <span class="value">${fmt(params.pFalseAlarmDecoy, 2)}</span>
         </div>
         <div class="result-item">
@@ -58,7 +59,7 @@ export function renderResultsContent(params, result) {
           <span class="value">${doctrineLine}</span>
         </div>
         <div class="result-item">
-          <span class="label">Inventory:</span>
+          <span class="label">Interceptors available:</span>
           <span class="value">${params.nInventory}</span>
         </div>
         <div class="result-item">

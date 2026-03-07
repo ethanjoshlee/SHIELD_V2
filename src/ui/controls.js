@@ -159,16 +159,25 @@ export function setSLSVisibility() {
  * @param {string} blueKey - Optional country key for defender
  * @param {string} redKey - Optional country key for attacker
  */
-export function readParamsFromUI(blueKey, redKey) {
+export function readParamsFromUI(blueKey, redKey, root = document) {
   const getValue = (id, param, defaultVal) => {
     let el = document.getElementById(id);
-    if (!el) el = document.querySelector(`[data-param="${param}"]`);
+    if (!el) el = root.querySelector(`[data-param="${param}"]`);
     return el?.value || defaultVal;
   };
 
   const nMissiles = Math.max(0, parseInt(getValue("nMissiles", "nMissiles", 0), 10) || 0);
   const mirvsPerMissile = Math.max(1, parseInt(getValue("mirvsPerMissile", "mirvsPerMissile", 1), 10) || 1);
-  const decoysPerWarhead = Math.max(0, parseInt(getValue("decoysPerWarhead", "decoysPerWarhead", 0), 10) || 0);
+
+  // Decoys per missile formula: decoysPerWarhead = decoysPerMissile / mirvsPerMissile
+  let decoysPerWarhead;
+  const decoysEl = root.querySelector('[data-param="decoysPerMissile"]');
+  if (decoysEl) {
+    const decoysPerMissile = Math.max(0, parseFloat(decoysEl.value) || 0);
+    decoysPerWarhead = decoysPerMissile / Math.max(1, mirvsPerMissile);
+  } else {
+    decoysPerWarhead = Math.max(0, parseInt(getValue("decoysPerWarhead", "decoysPerWarhead", 0), 10) || 0);
+  }
 
   const pDetectTrack = clamp01(parseFloat(getValue("pDetectTrack", "pDetectTrack", 0.8)) || 0);
   const pClassifyWarhead = clamp01(parseFloat(getValue("pClassifyWarhead", "pClassifyWarhead", 0.8)) || 0);
@@ -216,114 +225,113 @@ export function readParamsFromUI(blueKey, redKey) {
   };
 }
 
+function probSlider(label, param, pct, defaultPct) {
+  const v = defaultPct ?? pct;
+  return `
+    <div class="wizard-slider-row">
+      <div class="wizard-slider-header">
+        <span class="wizard-slider-label">${label}</span>
+        <span class="wizard-slider-value">${parseFloat(v).toFixed(1)}%</span>
+      </div>
+      <input type="range" class="wizard-slider" min="0.1" max="99.9" step="0.1" value="${v}" data-prob-target="${param}" />
+      <input type="number" class="wizard-hidden-param" data-param="${param}" value="${(v / 100).toFixed(4)}" tabindex="-1" aria-hidden="true" />
+    </div>`;
+}
+
+function intSlider(label, param, min, max, step, defaultVal) {
+  return `
+    <div class="wizard-slider-row">
+      <div class="wizard-slider-header">
+        <span class="wizard-slider-label">${label}</span>
+        <span class="wizard-slider-value">${defaultVal}</span>
+      </div>
+      <input type="range" class="wizard-slider" data-param="${param}" min="${min}" max="${max}" step="${step}" value="${defaultVal}" />
+    </div>`;
+}
+
 /**
- * BLUE step parameters (Blue force / Defender capabilities).
- * Returns HTML for: pDetectTrack, pClassifyWarhead, pFalseAlarmDecoy, pkWarhead, pkDecoy, nInventory
+ * BLUE step parameters (defender capabilities + engagement doctrine).
+ * 2-column layout for paired controls.
  */
 export function blueParamsHTML(d) {
+  const pdt  = (d.pDetectTrack * 100).toFixed(1);
+  const pcw  = (d.pClassifyWarhead * 100).toFixed(1);
+  const pfa  = (d.pFalseAlarmDecoy * 100).toFixed(1);
+  const pkw  = (d.pkWarhead * 100).toFixed(1);
+  const pkd  = (d.pkDecoy * 100).toFixed(1);
+  const pre  = (d.pReengage * 100).toFixed(1);
   return `
     <div class="wizard-param-group">
-      <label>
-        Detection + Tracking P:
-        <input type="number" class="param-input" data-param="pDetectTrack" min="0" max="1" step="0.01" value="${d.pDetectTrack}" />
-      </label>
-      <label>
-        Classifier TPR (W→W):
-        <input type="number" class="param-input" data-param="pClassifyWarhead" min="0" max="1" step="0.01" value="${d.pClassifyWarhead}" />
-      </label>
-      <label>
-        Classifier FPR (D→W):
-        <input type="number" class="param-input" data-param="pFalseAlarmDecoy" min="0" max="1" step="0.01" value="${d.pFalseAlarmDecoy}" />
-      </label>
-      <label>
-        Pk per shot (warhead):
-        <input type="number" class="param-input" data-param="pkWarhead" min="0" max="1" step="0.01" value="${d.pkWarhead}" />
-      </label>
-      <label>
-        Pk per shot (decoy):
-        <input type="number" class="param-input" data-param="pkDecoy" min="0" max="1" step="0.01" value="${d.pkDecoy}" />
-      </label>
-      <label>
-        Interceptor Inventory:
-        <input type="number" class="param-input" data-param="nInventory" min="0" step="1" value="${d.nInventory}" />
-      </label>
+      <div class="wizard-param-pair">
+        ${probSlider('Detection and tracking probability', 'pDetectTrack', pdt)}
+        ${probSlider('Warhead classification accuracy', 'pClassifyWarhead', pcw)}
+      </div>
+      <div class="wizard-param-pair">
+        ${probSlider('Decoy misclassification rate', 'pFalseAlarmDecoy', pfa)}
+        ${probSlider('Per shot kill probability for decoys', 'pkDecoy', pkd)}
+      </div>
+      <div class="wizard-param-pair">
+        ${probSlider('Per shot kill probability for warheads', 'pkWarhead', pkw)}
+        ${intSlider('Interceptors in engagement range', 'nInventory', 10, 2000, 10, d.nInventory)}
+      </div>
+      <div class="wizard-slider-row">
+        <div class="wizard-slider-header">
+          <span class="wizard-slider-label">Engagement doctrine</span>
+        </div>
+        <select class="wizard-select" data-param="doctrineMode">
+          <option value="barrage" ${d.doctrineMode === 'barrage' ? 'selected' : ''}>Barrage</option>
+          <option value="sls" ${d.doctrineMode === 'sls' ? 'selected' : ''}>Shoot-Look-Shoot</option>
+        </select>
+      </div>
+      <div class="doctrine-barrage-only">
+        ${intSlider('Intercept shots per detected/tracked warhead', 'shotsPerTarget', 1, 6, 1, d.shotsPerTarget)}
+      </div>
+      <div class="doctrine-sls-only" style="display:none">
+        <div class="wizard-param-pair">
+          ${intSlider('Max shots per detected/tracked warhead', 'maxShotsPerTarget', 1, 6, 1, d.maxShotsPerTarget)}
+          ${probSlider('Re-engagement probability per detected/tracked warhead', 'pReengage', pre)}
+        </div>
+      </div>
     </div>
   `;
 }
 
 /**
- * RED step parameters (Red force / Attacker payload).
- * Returns HTML for: nMissiles, mirvsPerMissile, decoysPerWarhead
+ * RED step parameters (attacker payload).
+ * Uses decoysPerMissile — decoys per missile (independent of missile count).
  */
 export function redParamsHTML(d) {
+  const decoysPerMissile = d.decoysPerMissile ?? (d.decoysPerWarhead * d.mirvsPerMissile).toFixed(1);
   return `
     <div class="wizard-param-group">
-      <label>
-        Missiles:
-        <input type="number" class="param-input" data-param="nMissiles" min="1" step="1" value="${d.nMissiles}" />
-      </label>
-      <label>
-        MIRVs per Missile:
-        <input type="number" class="param-input" data-param="mirvsPerMissile" min="1" step="1" value="${d.mirvsPerMissile}" />
-      </label>
-      <label>
-        Decoys per Warhead:
-        <input type="number" class="param-input" data-param="decoysPerWarhead" min="0" step="1" value="${d.decoysPerWarhead}" />
-      </label>
+      <div class="wizard-param-pair">
+        ${intSlider('Ballistic missiles in strike', 'nMissiles', 1, 500, 1, d.nMissiles)}
+        ${intSlider('Warheads per missile', 'mirvsPerMissile', 1, 16, 1, d.mirvsPerMissile)}
+      </div>
+      ${intSlider('Decoys per missile', 'decoysPerMissile', 0, 40, 1, decoysPerMissile)}
     </div>
   `;
 }
 
 /**
- * SIM step parameters (Simulation rules + Common Mode reliability).
- * Returns two separate groups: SIM controls and CM controls, as one HTML string.
+ * SIM step parameters (minimal: trials + seed only).
+ * Reliability params (pSystemUp, detectDegradeFactor, pkDegradeFactor) use silent DEFAULTS.
+ * Hidden inputs ensure readParamsFromUI() still finds all needed params.
  */
 export function simParamsHTML(d) {
   return `
     <div class="wizard-param-group">
-      <label>
-        Doctrine Mode:
-        <select class="param-input" data-param="doctrineMode">
-          <option value="barrage" ${d.doctrineMode === 'barrage' ? 'selected' : ''}>Barrage</option>
-          <option value="sls" ${d.doctrineMode === 'sls' ? 'selected' : ''}>Shoot-Look-Shoot</option>
-        </select>
-      </label>
-      <label>
-        Shots/Track (Barrage):
-        <input type="number" class="param-input" data-param="shotsPerTarget" min="0" step="1" value="${d.shotsPerTarget}" />
-      </label>
-      <label>
-        Max Shots/Track (SLS):
-        <input type="number" class="param-input" data-param="maxShotsPerTarget" min="0" step="1" value="${d.maxShotsPerTarget}" />
-      </label>
-      <label>
-        P(Re-engage):
-        <input type="number" class="param-input" data-param="pReengage" min="0" max="1" step="0.01" value="${d.pReengage}" />
-      </label>
-      <label>
-        Monte Carlo Trials:
-        <input type="number" class="param-input" data-param="nTrials" min="1" step="100" value="${d.nTrials}" />
-      </label>
-      <label>
-        Seed (blank=random):
-        <input type="number" class="param-input" data-param="seed" step="1" value="${d.seed || ''}" />
-      </label>
+      ${intSlider('Monte Carlo trials', 'nTrials', 100, 5000, 100, d.nTrials)}
+      <div class="wizard-slider-row">
+        <div class="wizard-slider-header">
+          <span class="wizard-slider-label">Seed (blank = random)</span>
+        </div>
+        <input type="text" class="wizard-text-input" data-param="seed" placeholder="auto" value="${d.seed ?? ''}" />
+      </div>
     </div>
-    <div class="wizard-param-group">
-      <h5>System Reliability</h5>
-      <label>
-        P(System Up):
-        <input type="number" class="param-input" data-param="pSystemUp" min="0" max="1" step="0.01" value="${d.pSystemUp}" />
-      </label>
-      <label>
-        Detect Degrade Factor:
-        <input type="number" class="param-input" data-param="detectDegradeFactor" min="0" max="1" step="0.01" value="${d.detectDegradeFactor}" />
-      </label>
-      <label>
-        Pk Degrade Factor:
-        <input type="number" class="param-input" data-param="pkDegradeFactor" min="0" max="1" step="0.01" value="${d.pkDegradeFactor}" />
-      </label>
-    </div>
+    <input type="number" class="wizard-hidden-param" data-param="pSystemUp" value="${d.pSystemUp}" tabindex="-1" aria-hidden="true" />
+    <input type="number" class="wizard-hidden-param" data-param="detectDegradeFactor" value="${d.detectDegradeFactor}" tabindex="-1" aria-hidden="true" />
+    <input type="number" class="wizard-hidden-param" data-param="pkDegradeFactor" value="${d.pkDegradeFactor}" tabindex="-1" aria-hidden="true" />
   `;
 }
 
