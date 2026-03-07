@@ -1,6 +1,7 @@
 /**
  * SHIELD — App entry point.
- * Uses state machine to transition: BOOT → SELECT → LOADING → DASHBOARD
+ * Uses state machine to transition: BOOT → WIZARD → LOADING → DASHBOARD
+ * (Old SELECT flow also available for compatibility)
  */
 
 import { STATES, transition, onStateChange } from './ui/stateMachine.js';
@@ -14,7 +15,12 @@ const container = document.getElementById('app');
 
 // Listen for state transitions
 onStateChange((newState, prevState, data) => {
-  // when leaving dashboard we may need cleanup
+  // when leaving wizard or results or dashboard we may need cleanup
+  if (prevState === STATES.WIZARD || prevState === STATES.RESULTS) {
+    import('./ui/globe/globeCore.js').then(mod => {
+      if (mod.disposeGlobe) mod.disposeGlobe();
+    });
+  }
   if (prevState === STATES.DASHBOARD && newState !== STATES.DASHBOARD) {
     // make sure any globe resources are released
     import('./ui/screens/dashboard.js').then(mod => {
@@ -31,13 +37,19 @@ onStateChange((newState, prevState, data) => {
     case STATES.SELECT:
       renderSelect(container);
       break;
+    case STATES.WIZARD:
+      import('./ui/screens/wizard.js').then(mod => {
+        mod.renderWizard(container, transition);
+      });
+      break;
     case STATES.LOADING:
       if (data.action === 'run') {
         renderRunLoading(container, data.params?.nTrials ?? 1000, () => {
           const t0 = performance.now();
           const result = runMonteCarlo(data.params);
           const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
-          transition(STATES.DASHBOARD, {
+          const nextState = data.fromWizard ? STATES.RESULTS : STATES.DASHBOARD;
+          transition(nextState, {
             blueKey: data.blueKey,
             redKey: data.redKey,
             runParams: data.params,
@@ -50,6 +62,11 @@ onStateChange((newState, prevState, data) => {
           transition(STATES.SELECT);
         });
       }
+      break;
+    case STATES.RESULTS:
+      import('./ui/screens/resultsScreen.js').then(mod => {
+        mod.renderResultsScreen(container, data, transition);
+      });
       break;
     case STATES.DASHBOARD:
       renderDashboard(container);

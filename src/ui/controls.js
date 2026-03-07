@@ -217,11 +217,122 @@ export function readParamsFromUI(blueKey, redKey) {
 }
 
 /**
+ * BLUE step parameters (Blue force / Defender capabilities).
+ * Returns HTML for: pDetectTrack, pClassifyWarhead, pFalseAlarmDecoy, pkWarhead, pkDecoy, nInventory
+ */
+export function blueParamsHTML(d) {
+  return `
+    <div class="wizard-param-group">
+      <label>
+        Detection + Tracking P:
+        <input type="number" class="param-input" data-param="pDetectTrack" min="0" max="1" step="0.01" value="${d.pDetectTrack}" />
+      </label>
+      <label>
+        Classifier TPR (W→W):
+        <input type="number" class="param-input" data-param="pClassifyWarhead" min="0" max="1" step="0.01" value="${d.pClassifyWarhead}" />
+      </label>
+      <label>
+        Classifier FPR (D→W):
+        <input type="number" class="param-input" data-param="pFalseAlarmDecoy" min="0" max="1" step="0.01" value="${d.pFalseAlarmDecoy}" />
+      </label>
+      <label>
+        Pk per shot (warhead):
+        <input type="number" class="param-input" data-param="pkWarhead" min="0" max="1" step="0.01" value="${d.pkWarhead}" />
+      </label>
+      <label>
+        Pk per shot (decoy):
+        <input type="number" class="param-input" data-param="pkDecoy" min="0" max="1" step="0.01" value="${d.pkDecoy}" />
+      </label>
+      <label>
+        Interceptor Inventory:
+        <input type="number" class="param-input" data-param="nInventory" min="0" step="1" value="${d.nInventory}" />
+      </label>
+    </div>
+  `;
+}
+
+/**
+ * RED step parameters (Red force / Attacker payload).
+ * Returns HTML for: nMissiles, mirvsPerMissile, decoysPerWarhead
+ */
+export function redParamsHTML(d) {
+  return `
+    <div class="wizard-param-group">
+      <label>
+        Missiles:
+        <input type="number" class="param-input" data-param="nMissiles" min="1" step="1" value="${d.nMissiles}" />
+      </label>
+      <label>
+        MIRVs per Missile:
+        <input type="number" class="param-input" data-param="mirvsPerMissile" min="1" step="1" value="${d.mirvsPerMissile}" />
+      </label>
+      <label>
+        Decoys per Warhead:
+        <input type="number" class="param-input" data-param="decoysPerWarhead" min="0" step="1" value="${d.decoysPerWarhead}" />
+      </label>
+    </div>
+  `;
+}
+
+/**
+ * SIM step parameters (Simulation rules + Common Mode reliability).
+ * Returns two separate groups: SIM controls and CM controls, as one HTML string.
+ */
+export function simParamsHTML(d) {
+  return `
+    <div class="wizard-param-group">
+      <label>
+        Doctrine Mode:
+        <select class="param-input" data-param="doctrineMode">
+          <option value="barrage" ${d.doctrineMode === 'barrage' ? 'selected' : ''}>Barrage</option>
+          <option value="sls" ${d.doctrineMode === 'sls' ? 'selected' : ''}>Shoot-Look-Shoot</option>
+        </select>
+      </label>
+      <label>
+        Shots/Track (Barrage):
+        <input type="number" class="param-input" data-param="shotsPerTarget" min="0" step="1" value="${d.shotsPerTarget}" />
+      </label>
+      <label>
+        Max Shots/Track (SLS):
+        <input type="number" class="param-input" data-param="maxShotsPerTarget" min="0" step="1" value="${d.maxShotsPerTarget}" />
+      </label>
+      <label>
+        P(Re-engage):
+        <input type="number" class="param-input" data-param="pReengage" min="0" max="1" step="0.01" value="${d.pReengage}" />
+      </label>
+      <label>
+        Monte Carlo Trials:
+        <input type="number" class="param-input" data-param="nTrials" min="1" step="100" value="${d.nTrials}" />
+      </label>
+      <label>
+        Seed (blank=random):
+        <input type="number" class="param-input" data-param="seed" step="1" value="${d.seed || ''}" />
+      </label>
+    </div>
+    <div class="wizard-param-group">
+      <h5>System Reliability</h5>
+      <label>
+        P(System Up):
+        <input type="number" class="param-input" data-param="pSystemUp" min="0" max="1" step="0.01" value="${d.pSystemUp}" />
+      </label>
+      <label>
+        Detect Degrade Factor:
+        <input type="number" class="param-input" data-param="detectDegradeFactor" min="0" max="1" step="0.01" value="${d.detectDegradeFactor}" />
+      </label>
+      <label>
+        Pk Degrade Factor:
+        <input type="number" class="param-input" data-param="pkDegradeFactor" min="0" max="1" step="0.01" value="${d.pkDegradeFactor}" />
+      </label>
+    </div>
+  `;
+}
+
+/**
  * Render the dashboard drawer controls panel (tabs for Blue, Red, CM, Sim).
  */
 export function renderDrawerControls(container, blueKey, redKey) {
   const d = readParamsFromUI();
-  
+
   container.innerHTML = `
     <div class="tab-panel active" id="tab-blue">
       <div class="panel-section">

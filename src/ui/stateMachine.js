@@ -4,7 +4,7 @@
  *         DASHBOARD → SELECT (reset)
  */
 
-const STATES = { BOOT: 'boot', SELECT: 'select', LOADING: 'loading', DASHBOARD: 'dashboard' };
+const STATES = { BOOT: 'boot', SELECT: 'select', WIZARD: 'wizard', LOADING: 'loading', DASHBOARD: 'dashboard', RESULTS: 'results' };
 
 let currentState = null;
 let stateData = {};

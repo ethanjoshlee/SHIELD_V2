@@ -1026,3 +1026,286 @@ input[type="range"]::-moz-range-thumb {
 
 /* Screen transitions */
 .screen { position: absolute; inset: 0; }
+
+/* ============================================================
+   Wizard Screen — 60/40 layout with persistent globe
+   ============================================================ */
+.wizard-shell {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.wizard-shell.active {
+  opacity: 1;
+}
+
+.wizard-left {
+  width: 60%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 40px 48px;
+  overflow-y: auto;
+  gap: 24px;
+}
+
+.wizard-right {
+  width: 40%;
+  position: relative;
+  background: var(--bg-primary);
+}
+
+.wizard-step-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.step-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--accent-amber);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.wizard-title {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.wizard-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 300;
+}
+
+.wizard-country-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.wizard-country-item {
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  color: var(--text-secondary);
+}
+
+.wizard-country-item:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.wizard-country-item.selected.blue {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: var(--accent-blue-dim);
+}
+
+.wizard-country-item.selected.red {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  background: var(--accent-red-dim);
+}
+
+.wizard-params-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.step-params {
+  display: none;
+}
+
+.step-params.active {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wizard-param-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wizard-param-group h5 {
+  margin: 12px 0 8px 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+.wizard-param-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.wizard-param-group input,
+.wizard-param-group select {
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  transition: border-color 0.15s;
+}
+
+.wizard-param-group input:focus,
+.wizard-param-group select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.wizard-nav {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.wizard-nav .btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.wizard-nav .btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.wizard-nav .btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wizard-nav .btn-run {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.wizard-nav .btn-run:hover:not(:disabled) {
+  background: rgba(0, 212, 255, 0.15);
+}
+
+/* ============================================================
+   Results Screen — read-only 60/40 final presentation
+   ============================================================ */
+.results-shell {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; opacity: 0; transition: opacity 0.4s ease;
+}
+.results-shell.active { opacity: 1; }
+
+.results-left {
+  width: 60%; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg-primary);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  padding: 40px 48px;
+  gap: 24px; overflow-y: hidden;
+}
+
+.results-right {
+  width: 40%; position: relative;
+  background: var(--bg-primary);
+}
+
+.results-header {
+  display: flex; flex-direction: column; gap: 6px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding-bottom: 16px;
+}
+
+.results-title {
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.12em; color: var(--accent-amber);
+  text-transform: uppercase; margin-bottom: 4px;
+}
+
+.results-scenario {
+  display: flex; gap: 16px; align-items: center;
+}
+
+.results-scenario-blue {
+  font-family: var(--font-mono); font-size: 12px;
+  letter-spacing: 0.06em; color: var(--accent-blue);
+  text-transform: uppercase;
+}
+
+.results-scenario-red {
+  font-family: var(--font-mono); font-size: 12px;
+  letter-spacing: 0.06em; color: var(--accent-red);
+  text-transform: uppercase;
+}
+
+.results-meta {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--text-dim); letter-spacing: 0.06em;
+}
+
+.results-body {
+  flex: 1; overflow-y: auto;
+}
+
+.results-nav {
+  flex-shrink: 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.results-nav .btn-reset {
+  width: 100%; padding: 10px 16px;
+  background: var(--bg-panel);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 2px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.results-nav .btn-reset:hover {
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.03);
+}

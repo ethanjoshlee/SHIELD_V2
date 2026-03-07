@@ -234,7 +234,7 @@ export function renderBoot(container) {
     el.classList.add('fade-out');
     setTimeout(() => {
       el.remove();
-      transition(STATES.SELECT);
+      transition(STATES.WIZARD);
     }, 500);
   }
 
