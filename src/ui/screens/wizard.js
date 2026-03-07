@@ -122,9 +122,7 @@ export function renderWizard(container, transitionFn) {
       const blue = COUNTRIES.blue[key];
       if (blue) {
         const mappings = [
-          ['nSpaceBoostKinetic', blue.nSpaceBoostKinetic ?? blue.interceptors?.boost_kinetic?.deployed],
           ['pkSpaceBoostKinetic', blue.pkSpaceBoostKinetic ?? blue.interceptors?.boost_kinetic?.pk],
-          ['nSpaceBoostDirected', blue.nSpaceBoostDirected ?? blue.interceptors?.boost_laser?.deployed],
           ['pkSpaceBoostDirected', blue.pkSpaceBoostDirected ?? blue.interceptors?.boost_laser?.pk],
         ];
         for (const [param, val] of mappings) {

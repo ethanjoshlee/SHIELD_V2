@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 
-let scene, camera, renderer, globeGroup;
+let scene, camera, renderer, globeDisplayGroup, globeGroup;
 let animationId = null;
 let autoRotate = true;
 
@@ -14,6 +14,7 @@ const DRAG_SENSITIVITY = 0.005;
 const DAMPING = 0.90;
 const VELOCITY_THRESHOLD = 0.0001;
 const MAX_TILT = Math.PI * 0.45; // ~81° — prevents inversion
+const PRESENTATION_TILT = THREE.MathUtils.degToRad(6);
 
 // Decomposed rotation state
 let rotY = 0;         // unbounded spin around world Y
@@ -52,8 +53,14 @@ export function initGlobe(container) {
   renderer.setClearColor(0x000000, 0);
   container.appendChild(renderer.domElement);
 
+  // Presentation-layer wrapper for small visual framing tilt.
+  globeDisplayGroup = new THREE.Group();
+  globeDisplayGroup.rotation.x = PRESENTATION_TILT;
+  scene.add(globeDisplayGroup);
+
+  // Geographic rotation group (used by rotateToCountry/drag/auto-rotate).
   globeGroup = new THREE.Group();
-  scene.add(globeGroup);
+  globeDisplayGroup.add(globeGroup);
 
   // Handle resize
   const ro = new ResizeObserver(() => {

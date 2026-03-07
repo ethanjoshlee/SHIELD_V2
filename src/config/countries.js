@@ -12,14 +12,14 @@ export const COUNTRIES = {
       interceptors: {
         boost_kinetic: {
           label: "Space-Based Kinetic (Boost)",
-          deployed: 100,
+          deployed: 0,
           pk: 0.50,
           costPerUnit_M: 15,
           phase: "boost",
         },
         boost_laser: {
           label: "Space-Based Laser (Boost)",
-          deployed: 50,
+          deployed: 0,
           pk: 0.40,
           costPerUnit_M: 25,
           phase: "boost",
@@ -67,9 +67,9 @@ export const COUNTRIES = {
       shotsPerTarget: 2,
       maxShotsPerTarget: 4,
       pReengage: 0.85,
-      nSpaceBoostKinetic: 100,
+      nSpaceBoostKinetic: 0,
       pkSpaceBoostKinetic: 0.50,
-      nSpaceBoostDirected: 50,
+      nSpaceBoostDirected: 0,
       pkSpaceBoostDirected: 0.40,
       constellationAltitudeKm: 1000,
       pSystemUp: 0.90,

@@ -15,8 +15,8 @@ export function renderResultsContent(params, result) {
 
   const doctrineLine =
     params.doctrineMode === "barrage"
-      ? `Barrage, ${params.shotsPerTarget} shots per warhead`
-      : `SLS, max ${params.maxShotsPerTarget} shots per warhead, P(re-engage)=${fmt(params.pReengage, 2)}`;
+      ? `Barrage, ${params.shotsPerTarget} shots per detected/tracked target`
+      : `SLS, max ${params.maxShotsPerTarget} shots per detected/tracked target, P(re-engage)=${fmt(params.pReengage, 2)}`;
 
   const nSpaceBoostKinetic = params.nSpaceBoostKinetic ?? 0;
   const pkSpaceBoostKinetic = params.pkSpaceBoostKinetic ?? 0;

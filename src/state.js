@@ -17,7 +17,7 @@ export const DEFAULTS = {
   pReengage: 0.85,
   pkWarhead: 0.60,
   pkDecoy: 0.80,
-  nInventory: 200,
+  nInventory: 44,
   nSpaceBoostKinetic: 0,
   pkSpaceBoostKinetic: 0.50,
   nSpaceBoostDirected: 0,

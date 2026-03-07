@@ -208,18 +208,18 @@ export function blueParamsHTML(d) {
       </div>
       <div class="wizard-param-pair">
         ${probSlider('Decoy misclassification rate', 'pFalseAlarmDecoy', pfa)}
-        ${intSlider('Ground-based interceptors in engagement range', 'nInventory', 10, 2000, 1, d.nInventory)}
+        ${intSlider('Ground-based interceptors in engagement range', 'nInventory', 0, 2000, 1, d.nInventory)}
       </div>
       <div class="wizard-param-pair">
         ${probSlider('Ground-based interceptor per shot kill probability for warheads', 'pkWarhead', pkw)}
         ${probSlider('Ground-based interceptor per shot kill probability for decoys', 'pkDecoy', pkd)}
       </div>
       <div class="wizard-param-pair">
-        ${intSlider('Space-based kinetic boost interceptors deployed', 'nSpaceBoostKinetic', 0, 4000, 1, d.nSpaceBoostKinetic ?? 0)}
+        ${intSlider('Space-based kinetic boost interceptors deployed', 'nSpaceBoostKinetic', 0, 3000, 1, d.nSpaceBoostKinetic ?? 0)}
         ${probSlider('Space-based kinetic boost interceptor kill probability', 'pkSpaceBoostKinetic', pkbK)}
       </div>
       <div class="wizard-param-pair">
-        ${intSlider('Space-based directed-energy boost interceptors deployed', 'nSpaceBoostDirected', 0, 4000, 1, d.nSpaceBoostDirected ?? 0)}
+        ${intSlider('Space-based directed-energy boost interceptors deployed', 'nSpaceBoostDirected', 0, 2000, 1, d.nSpaceBoostDirected ?? 0)}
         ${probSlider('Space-based directed-energy boost interceptor kill probability', 'pkSpaceBoostDirected', pkbD)}
       </div>
       <div class="wizard-slider-row">
@@ -232,12 +232,12 @@ export function blueParamsHTML(d) {
         </select>
       </div>
       <div class="doctrine-barrage-only">
-        ${intSlider('Intercept shots per detected/tracked warhead', 'shotsPerTarget', 1, 6, 1, d.shotsPerTarget)}
+        ${intSlider('Intercept shots per detected/tracked target', 'shotsPerTarget', 1, 6, 1, d.shotsPerTarget)}
       </div>
       <div class="doctrine-sls-only" style="display:none">
         <div class="wizard-param-pair">
-          ${intSlider('Max shots per detected/tracked warhead', 'maxShotsPerTarget', 1, 6, 1, d.maxShotsPerTarget)}
-          ${probSlider('Re-engagement probability per detected/tracked warhead', 'pReengage', pre)}
+          ${intSlider('Max shots per detected/tracked target', 'maxShotsPerTarget', 1, 6, 1, d.maxShotsPerTarget)}
+          ${probSlider('Re-engagement probability per detected/tracked target', 'pReengage', pre)}
         </div>
       </div>
     </div>

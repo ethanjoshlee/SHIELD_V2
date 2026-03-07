@@ -11,7 +11,7 @@
   "pReengage": 0.85,
   "pkWarhead": 0.60,
   "pkDecoy": 0.80,
-  "nInventory": 200,
+  "nInventory": 44,
   "nTrials": 2000,
   "pSystemUp": 0.90,
   "detectDegradeFactor": 0.50,
