@@ -1044,7 +1044,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .wizard-left {
-  width: 40%;
+  width: 50%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1056,7 +1056,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .wizard-right {
-  width: 60%;
+  width: 50%;
   position: relative;
   background: var(--bg-primary);
 }
@@ -1349,7 +1349,7 @@ input[type="range"]::-moz-range-thumb {
 .results-shell.active { opacity: 1; }
 
 .results-left {
-  width: 40%; flex-shrink: 0;
+  width: 50%; flex-shrink: 0;
   display: flex; flex-direction: column;
   background: var(--bg-primary);
   border-right: 1px solid rgba(255,255,255,0.06);
@@ -1358,7 +1358,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .results-right {
-  width: 60%; position: relative;
+  width: 50%; position: relative;
   background: var(--bg-primary);
 }
 
