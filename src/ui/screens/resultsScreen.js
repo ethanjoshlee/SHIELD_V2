@@ -37,7 +37,12 @@ export function renderResultsScreen(container, data, transitionFn) {
         <button class="btn btn-reset">← NEW SCENARIO</button>
       </div>
     </div>
-    <div class="results-right"></div>
+    <div class="results-right">
+      <div class="project-identity project-identity-right" aria-label="Project identity">
+        <div class="project-identity-title">Strategic Homeland Intercept Evaluation<br>and Layered Defense Model</div>
+        <div class="project-identity-attribution">Defense, Emerging Technology, and Strategy Program,<br>Belfer Center for Science and International Affairs</div>
+      </div>
+    </div>
   `;
 
   container.appendChild(el);
