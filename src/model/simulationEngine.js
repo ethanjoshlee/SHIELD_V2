@@ -8,7 +8,7 @@
 
 import { clamp01, bernoulli } from '../utils/rng.js';
 import { generateTargets, generateMissiles, expandToWarheadsAndDecoys } from './scenarioBuilder.js';
-import { classifyTarget, engageWithType, engageTarget } from './engagement.js';
+import { classifyTarget, engageWithType } from './engagement.js';
 import {
   applyBoostEvasion,
   applyAsatDetectPenalty,
@@ -46,11 +46,42 @@ const BOOST_TYPES = ["boost_kinetic", "boost_laser"];
 
 function doctrineParamsFrom(params) {
   return {
-    doctrineMode: params.doctrineMode,
-    shotsPerTarget: params.shotsPerTarget,
-    maxShotsPerTarget: params.maxShotsPerTarget,
-    pReengage: params.pReengage,
+    doctrineMode: params.doctrineMode === 'sls' ? 'sls' : 'barrage',
+    shotsPerTarget: Math.max(0, Math.floor(Number(params.shotsPerTarget) || 0)),
+    maxShotsPerTarget: Math.max(0, Math.floor(Number(params.maxShotsPerTarget) || 0)),
+    pReengage: clamp01(Number(params.pReengage) || 0),
   };
+}
+
+function kineticDoctrineParamsFrom(params, familyPrefix) {
+  const fallback = doctrineParamsFrom(params);
+  const modeRaw = params[`${familyPrefix}DoctrineMode`];
+  const doctrineMode = modeRaw === 'sls' || modeRaw === 'barrage'
+    ? modeRaw
+    : fallback.doctrineMode;
+  const shotsRaw = params[`${familyPrefix}ShotsPerTarget`];
+  const maxShotsRaw = params[`${familyPrefix}MaxShotsPerTarget`];
+  const pReengageRaw = params[`${familyPrefix}PReengage`];
+
+  return {
+    doctrineMode,
+    shotsPerTarget: Math.max(0, Math.floor(Number(shotsRaw ?? fallback.shotsPerTarget) || 0)),
+    maxShotsPerTarget: Math.max(0, Math.floor(Number(maxShotsRaw ?? fallback.maxShotsPerTarget) || 0)),
+    pReengage: clamp01(Number(pReengageRaw ?? fallback.pReengage) || 0),
+  };
+}
+
+function directedTargetsPerPlatformFrom(params) {
+  const raw = Math.floor(Number(params.boostDirectedTargetsPerPlatform) || 2);
+  return Math.min(9, Math.max(1, raw));
+}
+
+function isBoostDirectedType(type) {
+  return type === 'boost_laser';
+}
+
+function isBoostKineticType(type) {
+  return type.startsWith('boost_') && !isBoostDirectedType(type);
 }
 
 function hasBoostEngagementCapacity(boostScenario) {
@@ -63,18 +94,24 @@ function hasBoostEngagementCapacity(boostScenario) {
 
 /**
  * Boost phase abstraction:
- * each class's discretized pool represents whole-missile engagement opportunities
- * before MIRV separation.
+ * - kinetic boost uses doctrine-driven shot accounting
+ * - directed-energy boost uses platform-capacity opportunities
+ *
+ * Note: this pass resolves kinetic before directed-energy as a temporary
+ * modeling convention for implementation clarity, not a realism claim.
  */
 function runBoostPhaseOnMissiles({
   missiles,
   pDetectTrack,
-  doctrineParams,
-  inventoryByType,
-  pkByType,
+  boostKineticDoctrineParams,
+  boostKineticInventory,
+  boostDirectedOpportunityPool,
+  pkBoostKinetic,
+  pkBoostDirected,
   boostEvasionPenalty,
 }) {
-  const inventory = { ...inventoryByType };
+  let kineticInventory = boostKineticInventory;
+  let directedOpportunityPool = boostDirectedOpportunityPool;
   const survivingMissiles = [];
 
   let boostMissilesEngaged = 0;
@@ -92,22 +129,30 @@ function runBoostPhaseOnMissiles({
     boostMissilesEngaged++;
     let killed = false;
 
-    for (const type of BOOST_TYPES) {
-      const inventoryCount = inventory[type] ?? 0;
-      if (inventoryCount <= 0) continue;
-
-      let pk = pkByType[type] ?? 0;
+    if (kineticInventory > 0 && pkBoostKinetic > 0) {
+      let pk = pkBoostKinetic;
       pk = applyBoostEvasion(pk, missile.boostEvasion ?? 0);
       pk = applyBoostEvasion(pk, boostEvasionPenalty);
 
-      const res = engageWithType(missile, pk, doctrineParams, inventoryCount);
-      inventory[type] = res.inventoryRemaining;
+      const res = engageWithType(missile, pk, boostKineticDoctrineParams, kineticInventory);
+      kineticInventory = res.inventoryRemaining;
       boostShotsFired += res.shotsFired;
 
       if (res.killed) {
         killed = true;
-        break;
       }
+    }
+
+    if (!killed && directedOpportunityPool > 0 && pkBoostDirected > 0) {
+      // Temporary modeling convention in this pass:
+      // apply directed-energy after kinetic for each detected missile.
+      directedOpportunityPool -= 1;
+      boostShotsFired += 1;
+
+      let pk = pkBoostDirected;
+      pk = applyBoostEvasion(pk, missile.boostEvasion ?? 0);
+      pk = applyBoostEvasion(pk, boostEvasionPenalty);
+      if (bernoulli(pk)) killed = true;
     }
 
     if (killed) {
@@ -124,6 +169,8 @@ function runBoostPhaseOnMissiles({
     boostMissilesKilled,
     boostWarheadsDestroyed,
     boostShotsFired,
+    boostKineticInventoryRemaining: kineticInventory,
+    boostDirectedOpportunityPoolRemaining: directedOpportunityPool,
   };
 }
 
@@ -134,6 +181,9 @@ function runBoostPhaseOnMissiles({
 function runLegacyTrial(params) {
   const boostScenario = buildBoostScenario(params);
   const boostEnabled = hasBoostEngagementCapacity(boostScenario);
+  const midcourseKineticDoctrine = kineticDoctrineParamsFrom(params, 'midcourseKinetic');
+  const boostKineticDoctrine = kineticDoctrineParamsFrom(params, 'boostKinetic');
+  const boostDirectedTargetsPerPlatform = directedTargetsPerPlatformFrom(params);
 
   // Neutral compatibility path: preserve existing legacy behavior.
   if (!boostEnabled) {
@@ -181,8 +231,8 @@ function runLegacyTrial(params) {
         continue;
       }
 
-      const engageParams = { ...params, pkWarhead, pkDecoy };
-      const res = engageTarget(tgt, engageParams, inventory);
+      const pk = tgt.kind === 'warhead' ? pkWarhead : pkDecoy;
+      const res = engageWithType(tgt, pk, midcourseKineticDoctrine, inventory);
       inventory = res.inventoryRemaining;
 
       shotsTotal += res.shotsFired;
@@ -224,6 +274,10 @@ function runLegacyTrial(params) {
 
   const d = applyTrialDegradation(params);
   const pDetectTrack = d.pDetectTrack_trial;
+  // Space-layer detection degradation is applied to boost phase only.
+  const pDetectTrackBoost = clamp01(
+    pDetectTrack * (boostScenario.detectionMultiplier ?? 1)
+  );
   const pkWarhead = clamp01(params.pkWarhead * d.pkDegradeFactor);
   const pkDecoy = clamp01(params.pkDecoy * d.pkDegradeFactor);
 
@@ -231,10 +285,11 @@ function runLegacyTrial(params) {
   const boostInventoryDiscrete = discretizeBoostInventoryByType(
     boostScenario.effectiveBoostInterceptorsPostAsatByType
   );
-  const boostPkByType = {
-    boost_kinetic: clamp01(boostScenario.pkByType.boost_kinetic * d.pkDegradeFactor),
-    boost_laser: clamp01(boostScenario.pkByType.boost_laser * d.pkDegradeFactor),
-  };
+  const boostKineticInventory = boostInventoryDiscrete.boost_kinetic ?? 0;
+  const boostDirectedPlatforms = boostInventoryDiscrete.boost_laser ?? 0;
+  const boostDirectedOpportunityPool = boostDirectedPlatforms * boostDirectedTargetsPerPlatform;
+  const boostPkKinetic = clamp01(boostScenario.pkByType.boost_kinetic * d.pkDegradeFactor);
+  const boostPkDirected = clamp01(boostScenario.pkByType.boost_laser * d.pkDegradeFactor);
 
   const missiles = [];
   for (let i = 0; i < params.nMissiles; i++) {
@@ -248,10 +303,12 @@ function runLegacyTrial(params) {
 
   const boostRes = runBoostPhaseOnMissiles({
     missiles,
-    pDetectTrack,
-    doctrineParams: doctrineParamsFrom(params),
-    inventoryByType: boostInventoryDiscrete,
-    pkByType: boostPkByType,
+    pDetectTrack: pDetectTrackBoost,
+    boostKineticDoctrineParams: boostKineticDoctrine,
+    boostKineticInventory,
+    boostDirectedOpportunityPool,
+    pkBoostKinetic: boostPkKinetic,
+    pkBoostDirected: boostPkDirected,
     boostEvasionPenalty: boostScenario.boostEvasionPenalty,
   });
 
@@ -299,8 +356,8 @@ function runLegacyTrial(params) {
       continue;
     }
 
-    const engageParams = { ...params, pkWarhead, pkDecoy };
-    const res = engageTarget(tgt, engageParams, inventory);
+    const pk = tgt.kind === 'warhead' ? pkWarhead : pkDecoy;
+    const res = engageWithType(tgt, pk, midcourseKineticDoctrine, inventory);
     inventory = res.inventoryRemaining;
 
     shotsTotal += res.shotsFired;
@@ -351,6 +408,10 @@ function runMultiPhaseTrial(params) {
   const asatSpacePkPenalty = params.countermeasures?.asatSpacePkPenalty ?? 0;
   const pDetectTrack = applyAsatDetectPenalty(d.pDetectTrack_trial, asatDetectPenalty);
   const boostScenario = buildBoostScenario(params);
+  // Space-layer detection degradation is applied to boost phase only.
+  const pDetectTrackBoost = clamp01(
+    pDetectTrack * (boostScenario.detectionMultiplier ?? 1)
+  );
 
   // --- Build per-type inventory and effective Pk ---
   const inventory = {};
@@ -379,7 +440,10 @@ function runMultiPhaseTrial(params) {
     effectivePk[type] = clamp01(pk);
   }
 
-  const doctrineParams = doctrineParamsFrom(params);
+  const midcourseKineticDoctrine = kineticDoctrineParamsFrom(params, 'midcourseKinetic');
+  const boostKineticDoctrine = kineticDoctrineParamsFrom(params, 'boostKinetic');
+  const terminalDoctrine = midcourseKineticDoctrine;
+  const boostDirectedTargetsPerPlatform = directedTargetsPerPlatformFrom(params);
 
   // Stats
   let totalRealWarheads = 0;
@@ -413,31 +477,40 @@ function runMultiPhaseTrial(params) {
     Object.keys(interceptorConfigs).filter(t => interceptorConfigs[t].phase === "boost"),
     interceptorConfigs
   );
+  const boostKineticTypes = boostTypes.filter(isBoostKineticType);
+  const boostDirectedTypes = boostTypes.filter(isBoostDirectedType);
   const boostInventoryDiscrete = discretizeBoostInventoryByType(boostInventoryContinuous);
-  for (const type of boostTypes) {
+
+  for (const type of boostKineticTypes) {
     inventory[type] = boostInventoryDiscrete[type] ?? 0;
+  }
+  for (const type of boostDirectedTypes) {
+    const discretePlatforms = boostInventoryDiscrete[type] ?? 0;
+    inventory[type] = discretePlatforms * boostDirectedTargetsPerPlatform;
   }
 
   for (const missile of missiles) {
     // Detection in boost phase
-    const detected = bernoulli(pDetectTrack);
+    const detected = bernoulli(pDetectTrackBoost);
     if (!detected) {
       survivingMissiles.push(missile);
       continue;
     }
 
-    // Engage with boost interceptors (layered: try each type)
+    // Engage with boost interceptors (layered).
+    // In this pass, kinetic resolution happens before directed-energy by convention.
+    // This is a temporary modeling convention, not a realism claim.
     let killed = false;
     boostMissilesEngaged++;
 
-    for (const type of boostTypes) {
+    for (const type of boostKineticTypes) {
       if (inventory[type] <= 0) continue;
 
       // Pk adjusted for missile-level and scenario-level boost evasion penalties.
       let pk = applyBoostEvasion(effectivePk[type], missile.boostEvasion);
       pk = applyBoostEvasion(pk, boostScenario.boostEvasionPenalty);
 
-      const res = engageWithType(missile, pk, doctrineParams, inventory[type]);
+      const res = engageWithType(missile, pk, boostKineticDoctrine, inventory[type]);
       inventory[type] = res.inventoryRemaining;
       shotsTotal += res.shotsFired;
       shotsAtTrueWarheads += res.shotsFired; // boost targets are always real missiles
@@ -445,6 +518,24 @@ function runMultiPhaseTrial(params) {
       if (res.killed) {
         killed = true;
         break;
+      }
+    }
+
+    if (!killed) {
+      for (const type of boostDirectedTypes) {
+        if ((inventory[type] ?? 0) <= 0) continue;
+
+        inventory[type] -= 1;
+        shotsTotal += 1;
+        shotsAtTrueWarheads += 1; // boost targets are always real missiles
+
+        let pk = applyBoostEvasion(effectivePk[type], missile.boostEvasion);
+        pk = applyBoostEvasion(pk, boostScenario.boostEvasionPenalty);
+
+        if (bernoulli(pk)) {
+          killed = true;
+          break;
+        }
       }
     }
 
@@ -506,7 +597,7 @@ function runMultiPhaseTrial(params) {
     for (const type of midcourseTypes) {
       if (inventory[type] <= 0) continue;
 
-      const res = engageWithType(tgt, effectivePk[type], doctrineParams, inventory[type]);
+      const res = engageWithType(tgt, effectivePk[type], midcourseKineticDoctrine, inventory[type]);
       inventory[type] = res.inventoryRemaining;
       shotsTotal += res.shotsFired;
 
@@ -556,7 +647,7 @@ function runMultiPhaseTrial(params) {
     for (const type of terminalTypes) {
       if (inventory[type] <= 0) continue;
 
-      const res = engageWithType(wh, effectivePk[type], doctrineParams, inventory[type]);
+      const res = engageWithType(wh, effectivePk[type], terminalDoctrine, inventory[type]);
       inventory[type] = res.inventoryRemaining;
       shotsTotal += res.shotsFired;
       shotsAtTrueWarheads += res.shotsFired;

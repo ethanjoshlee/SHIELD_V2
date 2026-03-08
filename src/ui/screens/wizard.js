@@ -22,6 +22,21 @@ const STEPS = [
   { key: 'sim',  title: 'SIMULATION', subtitle: 'Rules and reliability', number: '03 / 03' },
 ];
 
+const DOCTRINE_GROUPS = [
+  {
+    param: 'midcourseKineticDoctrineMode',
+    defaultMode: 'barrage',
+    barrageClass: 'doctrine-midcourse-kinetic-barrage-only',
+    slsClass: 'doctrine-midcourse-kinetic-sls-only',
+  },
+  {
+    param: 'boostKineticDoctrineMode',
+    defaultMode: 'barrage',
+    barrageClass: 'doctrine-boost-kinetic-barrage-only',
+    slsClass: 'doctrine-boost-kinetic-sls-only',
+  },
+];
+
 export function renderWizard(container, transitionFn) {
   // All wizard state is local — fresh on every invocation
   let el = null;
@@ -41,9 +56,23 @@ export function renderWizard(container, transitionFn) {
   }
 
   function updateDoctrineGating() {
-    const mode = el.querySelector('[data-param="doctrineMode"]')?.value ?? 'barrage';
-    el.querySelectorAll('.doctrine-barrage-only').forEach(r => { r.style.display = mode === 'barrage' ? '' : 'none'; });
-    el.querySelectorAll('.doctrine-sls-only').forEach(r => { r.style.display = mode === 'sls' ? '' : 'none'; });
+    for (const group of DOCTRINE_GROUPS) {
+      const input = el.querySelector(`[data-param="${group.param}"]`);
+      const mode = input?.value ?? group.defaultMode;
+
+      el.querySelectorAll(`.wizard-toggle-item[data-doctrine-param="${group.param}"]`).forEach((btn) => {
+        const selected = btn.dataset.doctrineMode === mode;
+        btn.classList.toggle('selected', selected);
+        btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
+
+      el.querySelectorAll(`.${group.barrageClass}`).forEach((row) => {
+        row.style.display = mode === 'barrage' ? '' : 'none';
+      });
+      el.querySelectorAll(`.${group.slsClass}`).forEach((row) => {
+        row.style.display = mode === 'sls' ? '' : 'none';
+      });
+    }
   }
 
   function updateStepDisplay() {
@@ -137,7 +166,11 @@ export function renderWizard(container, transitionFn) {
         const launchRegion = red.launchRegion && LAUNCH_REGION_PRESETS[red.launchRegion] ? red.launchRegion : 'default';
         const mappings = [
           ['launchRegion', launchRegion],
-          ['asatSpaceAvailabilityPenalty', red.asatSpaceAvailabilityPenalty ?? red.countermeasures?.asatSpaceAvailabilityPenalty ?? 0],
+          ['pAsatCyberEffect', red.pAsatCyberEffect ?? 0.18],
+          ['nAsatHitToKill', red.nAsatHitToKill ?? 24],
+          ['pAsatHitToKill', red.pAsatHitToKill ?? 0.40],
+          ['nAsatNuclear', red.nAsatNuclear ?? 0],
+          ['pAsatNuclearEffect', red.pAsatNuclearEffect ?? 0.55],
           ['boostEvasionPenalty', red.boostEvasionPenalty ?? 0],
         ];
         for (const [param, val] of mappings) {
@@ -214,7 +247,21 @@ export function renderWizard(container, transitionFn) {
 
   // Doctrine gating — initial + on change
   updateDoctrineGating();
-  el.querySelector('[data-param="doctrineMode"]')?.addEventListener('change', updateDoctrineGating);
+  for (const group of DOCTRINE_GROUPS) {
+    const input = el.querySelector(`[data-param="${group.param}"]`);
+    input?.addEventListener('change', updateDoctrineGating);
+  }
+  el.addEventListener('click', (event) => {
+    const btn = event.target.closest('.wizard-toggle-item[data-doctrine-param][data-doctrine-mode]');
+    if (!btn || !el.contains(btn)) return;
+    const doctrineParam = btn.dataset.doctrineParam;
+    const nextMode = btn.dataset.doctrineMode;
+    if (!doctrineParam || !nextMode) return;
+    const doctrineModeInput = el.querySelector(`[data-param="${doctrineParam}"]`);
+    if (!doctrineModeInput || doctrineModeInput.value === nextMode) return;
+    doctrineModeInput.value = nextMode;
+    doctrineModeInput.dispatchEvent(new Event('change', { bubbles: true }));
+  });
 
   // Globe — fresh init per invocation
   const globeContainer = el.querySelector('.wizard-right');

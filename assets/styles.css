@@ -1133,6 +1133,10 @@ input[type="range"]::-moz-range-thumb {
   overflow-y: auto;
 }
 
+.wizard-params-container::-webkit-scrollbar { width: 4px; }
+.wizard-params-container::-webkit-scrollbar-track { background: transparent; }
+.wizard-params-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
 .step-params {
   display: none;
 }
@@ -1319,6 +1323,42 @@ input[type="range"]::-moz-range-thumb {
 
 .wizard-select:focus {
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+.wizard-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.wizard-toggle-item {
+  padding: 8px 12px;
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.wizard-toggle-item:hover {
+  border-color: rgba(0, 212, 255, 0.35);
+  color: var(--text-primary);
+}
+
+.wizard-toggle-item.selected {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.wizard-toggle-item:focus-visible {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.35);
 }
 
 .wizard-text-input {
