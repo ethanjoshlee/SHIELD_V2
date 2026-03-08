@@ -1,8 +1,9 @@
 /**
- * WIZARD screen — three-step pre-run configuration with persistent globe.
- * Step 0: BLUE (defender selection + blue params)
- * Step 1: RED (attacker selection + red params)
- * Step 2: SIM (sim + CM params)
+ * WIZARD screen — four-step pre-run configuration with persistent globe.
+ * Step 0: SIDES (Blue/Red selection)
+ * Step 1: BLUE (defender params)
+ * Step 2: RED (attacker params)
+ * Step 3: SIM (sim + CM params)
  * All parameter inputs rendered once and kept in DOM; nav shows/hides step sections.
  * All state is local to renderWizard — safe for multiple invocations per session.
  */
@@ -17,9 +18,10 @@ import { createHudOverlay } from '../globe/hudOverlay.js';
 import { blueParamsHTML, redParamsHTML, simParamsHTML, readParamsFromUI } from '../controls.js';
 
 const STEPS = [
-  { key: 'blue', title: 'CONFIGURE BLUE', subtitle: 'Defense capabilities and parameters', number: '01 / 03' },
-  { key: 'red',  title: 'CONFIGURE RED', subtitle: 'Attack capabilities and parameters', number: '02 / 03' },
-  { key: 'sim',  title: 'MODEL COMPUTATION', subtitle: 'Trial settings and model parameters', number: '03 / 03' },
+  { key: 'sides', title: '', subtitle: '', number: '01 / 04' },
+  { key: 'blue', title: 'CONFIGURE BLUE', subtitle: 'Defense capabilities and parameters', number: '02 / 04' },
+  { key: 'red',  title: 'CONFIGURE RED', subtitle: 'Attack capabilities and parameters', number: '03 / 04' },
+  { key: 'sim',  title: 'MODEL COMPUTATION', subtitle: 'Trial settings and model parameters', number: '04 / 04' },
 ];
 
 const DOCTRINE_GROUPS = [
@@ -77,6 +79,64 @@ function resolveBluePresetParamValue(bluePreset, param) {
   }
 }
 
+function summarizeRedMissileClasses(redPreset) {
+  const classes = redPreset?.missileClasses;
+  if (!classes) return null;
+
+  let totalMissiles = 0;
+  let mirvWeighted = 0;
+  let decoysPerMissileWeighted = 0;
+  let yieldWeighted = 0;
+  let boostEvasionWeighted = 0;
+
+  for (const cls of Object.values(classes)) {
+    const count = Math.max(0, Number(cls?.count) || 0);
+    if (!count) continue;
+    const mirvs = Math.max(1, Number(cls?.mirvsPerMissile) || 1);
+    const decoysPerWarhead = Math.max(0, Number(cls?.decoysPerWarhead) || 0);
+    const yieldKt = Math.max(0, Number(cls?.yieldKt) || 0);
+    const boostEvasion = Math.max(0, Number(cls?.boostEvasion) || 0);
+
+    totalMissiles += count;
+    mirvWeighted += count * mirvs;
+    decoysPerMissileWeighted += count * (decoysPerWarhead * mirvs);
+    yieldWeighted += count * yieldKt;
+    boostEvasionWeighted += count * boostEvasion;
+  }
+
+  if (!totalMissiles) return null;
+
+  return {
+    nMissiles: Math.round(totalMissiles),
+    mirvsPerMissile: Math.max(1, Math.round(mirvWeighted / totalMissiles)),
+    decoysPerMissile: Math.max(0, Math.round(decoysPerMissileWeighted / totalMissiles)),
+    kilotonsPerWarhead: Math.max(20, Math.round(yieldWeighted / totalMissiles)),
+    boostEvasionPenalty: Math.max(0, Math.min(0.999, boostEvasionWeighted / totalMissiles)),
+  };
+}
+
+function resolveRedPresetParamValue(redPreset, param, redSummary) {
+  if (!redPreset) return undefined;
+  if (redPreset[param] !== undefined && redPreset[param] !== null) {
+    return redPreset[param];
+  }
+
+  switch (param) {
+    case 'nMissiles':
+      return redSummary?.nMissiles;
+    case 'mirvsPerMissile':
+      return redSummary?.mirvsPerMissile;
+    case 'decoysPerMissile':
+      return redSummary?.decoysPerMissile;
+    case 'kilotonsPerWarhead':
+      return redSummary?.kilotonsPerWarhead;
+    case 'boostEvasionPenalty':
+      return redSummary?.boostEvasionPenalty;
+    default:
+      return undefined;
+  }
+}
+
 export function renderWizard(container, transitionFn) {
   // All wizard state is local — fresh on every invocation
   let el = null;
@@ -117,24 +177,23 @@ export function renderWizard(container, transitionFn) {
 
   function updateStepDisplay() {
     const step = STEPS[currentStep];
+    const isSidesStep = step.key === 'sides';
 
     el.querySelector('.step-badge').textContent = step.number;
     el.querySelector('.wizard-title').textContent = step.title;
     el.querySelector('.wizard-subtitle').textContent = step.subtitle;
-
-    const countrySection = el.querySelector('.wizard-country-section');
-    countrySection.style.display = currentStep < 2 ? 'flex' : 'none';
+    el.classList.toggle('wizard-step-sides', isSidesStep);
 
     const paramSections = el.querySelectorAll('.step-params');
-    paramSections.forEach((section, i) => {
-      section.classList.toggle('active', i === currentStep);
+    paramSections.forEach((section) => {
+      section.classList.toggle('active', section.dataset.step === step.key);
     });
 
     // Country-gating: params hidden until the step's country is selected
     const paramsContainer = el.querySelector('.wizard-params-container');
-    const stepHasCountry = currentStep === 0 ? !!selectedBlue
-                         : currentStep === 1 ? !!selectedRed
-                         : true;
+    const stepHasCountry = step.key === 'blue' ? !!selectedBlue
+                         : step.key === 'red' ? !!selectedRed
+                         : step.key === 'sim';
     paramsContainer.classList.toggle('unlocked', stepHasCountry);
 
     const btnBack = el.querySelector('.btn-back');
@@ -142,12 +201,14 @@ export function renderWizard(container, transitionFn) {
     const btnRun  = el.querySelector('.btn-run');
 
     btnBack.style.display = currentStep > 0 ? 'block' : 'none';
-    btnNext.style.display = currentStep < 2 ? 'block' : 'none';
-    btnRun.style.display  = currentStep === 2 ? 'block' : 'none';
+    btnNext.style.display = currentStep < STEPS.length - 1 ? 'block' : 'none';
+    btnRun.style.display  = currentStep === STEPS.length - 1 ? 'block' : 'none';
 
-    if (currentStep === 0) {
+    if (step.key === 'sides') {
+      btnNext.disabled = !(selectedBlue && selectedRed);
+    } else if (step.key === 'blue') {
       btnNext.disabled = !selectedBlue;
-    } else if (currentStep === 1) {
+    } else if (step.key === 'red') {
       btnNext.disabled = !selectedRed;
     } else {
       btnNext.disabled = false;
@@ -175,7 +236,21 @@ export function renderWizard(container, transitionFn) {
 
       const input = el.querySelector(`[data-param="${param}"]`);
       if (!input) return;
-      input.value = String(val);
+      if (input.type === 'range') {
+        const min = input.min !== '' ? parseFloat(input.min) : null;
+        const max = input.max !== '' ? parseFloat(input.max) : null;
+        const numericVal = parseFloat(val);
+        if (Number.isFinite(numericVal)) {
+          let nextNumeric = numericVal;
+          if (Number.isFinite(min)) nextNumeric = Math.max(min, nextNumeric);
+          if (Number.isFinite(max)) nextNumeric = Math.min(max, nextNumeric);
+          input.value = String(nextNumeric);
+        } else {
+          input.value = String(val);
+        }
+      } else {
+        input.value = String(val);
+      }
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
     };
@@ -200,8 +275,7 @@ export function renderWizard(container, transitionFn) {
 
         for (const param of blueStepParams) {
           const presetValue = resolveBluePresetParamValue(blue, param);
-          const fallbackValue = resolveBluePresetParamValue(DEFAULTS, param);
-          const nextValue = presetValue ?? DEFAULTS[param] ?? fallbackValue;
+          const nextValue = presetValue ?? DEFAULTS[param];
           if (nextValue === undefined || nextValue === null) continue;
           setParamValue(param, nextValue);
         }
@@ -210,18 +284,23 @@ export function renderWizard(container, transitionFn) {
       selectedRed = key;
       const red = COUNTRIES.red[key];
       if (red) {
-        const launchRegion = red.launchRegion && LAUNCH_REGION_PRESETS[red.launchRegion] ? red.launchRegion : 'default';
-        const mappings = [
-          ['launchRegion', launchRegion],
-          ['pAsatCyberEffect', red.pAsatCyberEffect ?? 0.18],
-          ['nAsatHitToKill', red.nAsatHitToKill ?? 24],
-          ['pAsatHitToKill', red.pAsatHitToKill ?? 0.40],
-          ['nAsatNuclear', red.nAsatNuclear ?? 0],
-          ['pAsatNuclearEffect', red.pAsatNuclearEffect ?? 0.55],
-          ['boostEvasionPenalty', red.boostEvasionPenalty ?? 0],
-        ];
-        for (const [param, val] of mappings) {
-          setParamValue(param, val);
+        const redStepParams = Array.from(
+          new Set(
+            Array.from(
+              el.querySelectorAll('.step-params[data-step="red"] [data-param]')
+            ).map((node) => node.dataset.param).filter(Boolean)
+          )
+        );
+        const redSummary = summarizeRedMissileClasses(red);
+
+        for (const param of redStepParams) {
+          let presetValue = resolveRedPresetParamValue(red, param, redSummary);
+          if (param === 'launchRegion') {
+            presetValue = presetValue && LAUNCH_REGION_PRESETS[presetValue] ? presetValue : 'default';
+          }
+          const nextValue = presetValue ?? DEFAULTS[param];
+          if (nextValue === undefined || nextValue === null) continue;
+          setParamValue(param, nextValue);
         }
       }
     }
@@ -243,12 +322,8 @@ export function renderWizard(container, transitionFn) {
         <p class="wizard-subtitle">${STEPS[0].subtitle}</p>
       </div>
 
-      <div class="wizard-country-section">
-        ${getCountriesList('blue')}
-      </div>
-
       <div class="wizard-params-container">
-        <div class="step-params active" data-step="blue">
+        <div class="step-params" data-step="blue">
           ${blueParamsHTML(d)}
         </div>
         <div class="step-params" data-step="red">
@@ -267,6 +342,24 @@ export function renderWizard(container, transitionFn) {
     </div>
 
     <div class="wizard-right">
+      <div class="wizard-engagement-overlay" aria-label="Define engagement">
+        <div class="wizard-engagement-title">DEFINE ENGAGEMENT</div>
+        <div class="wizard-engagement-subtitle">Select defending and attacking actors</div>
+      </div>
+      <div class="wizard-sides-panels">
+        <div class="wizard-sides-panel wizard-sides-panel-blue">
+          <div class="wizard-sides-panel-title wizard-sides-panel-title-blue">Blue (Defender)</div>
+          <div class="wizard-country-section wizard-country-section-sides" data-side-list="blue">
+            ${getCountriesList('blue')}
+          </div>
+        </div>
+        <div class="wizard-sides-panel wizard-sides-panel-red">
+          <div class="wizard-sides-panel-title wizard-sides-panel-title-red">Red (Attacker)</div>
+          <div class="wizard-country-section wizard-country-section-sides" data-side-list="red">
+            ${getCountriesList('red')}
+          </div>
+        </div>
+      </div>
       <div class="project-identity project-identity-right" aria-label="Project identity">
         <div class="project-identity-title">Strategic Homeland Intercept Evaluation<br>and Layered Defense Model</div>
         <div class="project-identity-attribution">Defense, Emerging Technology, and Strategy Program<br>Belfer Center for Science and International Affairs</div>
@@ -324,8 +417,9 @@ export function renderWizard(container, transitionFn) {
   startAnimation();
 
   // Country section event delegation
-  const countrySection = el.querySelector('.wizard-country-section');
-  countrySection.addEventListener('click', handleCountryClick);
+  el.querySelectorAll('.wizard-country-section').forEach((countrySection) => {
+    countrySection.addEventListener('click', handleCountryClick);
+  });
 
   const btnBack = el.querySelector('.btn-back');
   const btnNext = el.querySelector('.btn-next');
@@ -333,17 +427,11 @@ export function renderWizard(container, transitionFn) {
 
   btnBack.addEventListener('click', () => {
     currentStep = Math.max(0, currentStep - 1);
-    if (currentStep === 0) {
-      countrySection.innerHTML = getCountriesList('blue');
-    }
     updateStepDisplay();
   });
 
   btnNext.addEventListener('click', () => {
     currentStep = Math.min(STEPS.length - 1, currentStep + 1);
-    if (currentStep === 1) {
-      countrySection.innerHTML = getCountriesList('red');
-    }
     updateStepDisplay();
   });
 
