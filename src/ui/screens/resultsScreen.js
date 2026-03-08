@@ -23,7 +23,7 @@ export function renderResultsScreen(container, data, transitionFn) {
   el.innerHTML = `
     <div class="results-left">
       <div class="results-header">
-        <div class="results-title">SIMULATION RESULTS</div>
+        <div class="results-title">MODEL OUTPUT</div>
         <div class="results-scenario">
           <span class="results-scenario-blue">DEF: ${blueLabel}</span>
           <span class="results-scenario-red">ATK: ${redLabel}</span>
@@ -34,13 +34,13 @@ export function renderResultsScreen(container, data, transitionFn) {
         ${renderResultsContent(runParams, runResult)}
       </div>
       <div class="results-nav">
-        <button class="btn btn-reset">← NEW SCENARIO</button>
+        <button class="btn btn-reset">← RESET MODEL</button>
       </div>
     </div>
     <div class="results-right">
       <div class="project-identity project-identity-right" aria-label="Project identity">
         <div class="project-identity-title">Strategic Homeland Intercept Evaluation<br>and Layered Defense Model</div>
-        <div class="project-identity-attribution">Defense, Emerging Technology, and Strategy Program,<br>Belfer Center for Science and International Affairs</div>
+        <div class="project-identity-attribution">Defense, Emerging Technology, and Strategy Program<br>Belfer Center for Science and International Affairs</div>
       </div>
     </div>
   `;

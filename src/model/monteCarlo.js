@@ -37,7 +37,7 @@ export function runMonteCarlo(params) {
   const boostWarheadsDestroyed = [];
   const midcourseWarheadsKilled = [];
   const terminalWarheadsKilled = [];
-  const ktDelivered = [];
+  const deliveredKilotons = [];
 
   let realWarheadsConst = null;
   for (let t = 0; t < nTrials; t++) {
@@ -65,7 +65,7 @@ export function runMonteCarlo(params) {
     boostWarheadsDestroyed.push(r.boostWarheadsDestroyed);
     midcourseWarheadsKilled.push(r.midcourseWarheadsKilled);
     terminalWarheadsKilled.push(r.terminalWarheadsKilled);
-    ktDelivered.push(r.ktDelivered);
+    deliveredKilotons.push(r.deliveredKilotons ?? r.ktDelivered ?? 0);
   }
 
   const summary = computeSummary(
@@ -77,7 +77,7 @@ export function runMonteCarlo(params) {
       invLeft, systemUpFlags,
       boostMissilesKilled, boostWarheadsDestroyed,
       midcourseWarheadsKilled, terminalWarheadsKilled,
-      ktDelivered,
+      deliveredKilotons,
     },
     realWarheadsConst,
     params
@@ -88,7 +88,7 @@ export function runMonteCarlo(params) {
     intReal,
     shotsTot,
     fp,
-    ktDelivered,
+    deliveredKilotons,
     summary,
   };
 }

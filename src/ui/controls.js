@@ -33,6 +33,19 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
 
   const nMissiles = Math.max(0, parseInt(getValue("nMissiles", "nMissiles", 0), 10) || 0);
   const mirvsPerMissile = Math.max(1, parseInt(getValue("mirvsPerMissile", "mirvsPerMissile", 1), 10) || 1);
+  const kilotonsPerWarhead = Math.min(
+    5000,
+    Math.max(
+      20,
+      parseFloat(
+        getValue(
+          "kilotonsPerWarhead",
+          "kilotonsPerWarhead",
+          redPreset?.kilotonsPerWarhead ?? 400
+        )
+      ) || 400
+    )
+  );
 
   // Decoys per missile formula: decoysPerWarhead = decoysPerMissile / mirvsPerMissile
   let decoysPerWarhead;
@@ -241,6 +254,7 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
   return {
     nMissiles,
     mirvsPerMissile,
+    kilotonsPerWarhead,
     decoysPerWarhead,
     pDetectTrack,
     pClassifyWarhead,
@@ -420,6 +434,7 @@ export function blueParamsHTML(d) {
  */
 export function redParamsHTML(d) {
   const decoysPerMissile = d.decoysPerMissile ?? (d.decoysPerWarhead * d.mirvsPerMissile).toFixed(1);
+  const kilotonsPerWarhead = d.kilotonsPerWarhead ?? 400;
   const asatCyber = ((d.pAsatCyberEffect ?? 0.18) * 100).toFixed(1);
   const asatHitToKillPk = ((d.pAsatHitToKill ?? 0.40) * 100).toFixed(1);
   const asatNuclearPk = ((d.pAsatNuclearEffect ?? 0.55) * 100).toFixed(1);
@@ -431,7 +446,10 @@ export function redParamsHTML(d) {
         ${intSlider('Ballistic missiles in strike', 'nMissiles', 1, 500, 1, d.nMissiles)}
         ${intSlider('Warheads per missile', 'mirvsPerMissile', 1, 16, 1, d.mirvsPerMissile)}
       </div>
-      ${intSlider('Decoys per missile', 'decoysPerMissile', 0, 40, 1, decoysPerMissile)}
+      <div class="wizard-param-pair">
+        ${intSlider('Decoys per missile', 'decoysPerMissile', 0, 40, 1, decoysPerMissile)}
+        ${intSlider('Kilotons per warhead', 'kilotonsPerWarhead', 20, 5000, 10, kilotonsPerWarhead)}
+      </div>
       <div class="wizard-slider-row">
         <div class="wizard-slider-header">
           <span class="wizard-slider-label">Launch region preset</span>
@@ -549,6 +567,10 @@ export function renderDrawerControls(container, blueKey, redKey) {
           <label>
             MIRVs per Missile:
             <input type="number" class="param-input" data-param="mirvsPerMissile" min="1" step="1" value="${d.mirvsPerMissile}" />
+          </label>
+          <label>
+            Kilotons per Warhead:
+            <input type="number" class="param-input" data-param="kilotonsPerWarhead" min="20" max="5000" step="10" value="${d.kilotonsPerWarhead ?? 400}" />
           </label>
           <label>
             Decoys per Warhead:

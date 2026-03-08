@@ -11,6 +11,7 @@ export function renderResultsContent(params, result) {
 
   const realWarheads = params.nMissiles * params.mirvsPerMissile;
   const decoysPerMissile = params.decoysPerWarhead * params.mirvsPerMissile;
+  const kilotonsPerWarhead = params.kilotonsPerWarhead ?? 400;
   const decoys = realWarheads * params.decoysPerWarhead;
   const totalObjects = realWarheads + decoys;
 
@@ -57,6 +58,10 @@ export function renderResultsContent(params, result) {
   const availabilityMultiplier = asatEffects.availabilityMultiplier ?? boostScenario.availabilityMultiplier ?? 1;
   const detectionMultiplier = asatEffects.detectionMultiplier ?? boostScenario.detectionMultiplier ?? 1;
   const boostEvasionPenalty = params.boostEvasionPenalty ?? 0;
+  const meanDeliveredKilotons = s.meanDeliveredKilotons ?? s.meanKtDelivered ?? 0;
+  const p10DeliveredKilotons = s.p10DeliveredKilotons ?? s.p10KtDelivered ?? 0;
+  const medianDeliveredKilotons = s.medianDeliveredKilotons ?? s.medianKtDelivered ?? 0;
+  const p90DeliveredKilotons = s.p90DeliveredKilotons ?? s.p90KtDelivered ?? 0;
 
   let html = `
     <div class="results-content">
@@ -69,6 +74,10 @@ export function renderResultsContent(params, result) {
         <div class="result-item">
           <span class="label">Warheads per missile:</span>
           <span class="value">${params.mirvsPerMissile}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Kilotons per warhead:</span>
+          <span class="value">${fmt(kilotonsPerWarhead, 0)} kt</span>
         </div>
         <div class="result-item">
           <span class="label">Decoys per missile:</span>
@@ -194,6 +203,14 @@ export function renderResultsContent(params, result) {
           <span class="label">Mean Intercepted:</span>
           <span class="value" style="color: var(--accent-green);">${fmt(s.meanIntReal, 2)}</span>
         </div>
+        <div class="result-item">
+          <span class="label">Mean delivered kilotons:</span>
+          <span class="value" style="color: var(--accent-red);">${fmt(meanDeliveredKilotons, 1)} kt</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Delivered kilotons P10 / Median / P90:</span>
+          <span class="value">${fmt(p10DeliveredKilotons, 0)} / ${fmt(medianDeliveredKilotons, 0)} / ${fmt(p90DeliveredKilotons, 0)} kt</span>
+        </div>
       </div>
   `;
 
@@ -217,23 +234,6 @@ export function renderResultsContent(params, result) {
         <div class="result-item">
           <span class="label">Terminal: Warheads Killed</span>
           <span class="value">${fmt(s.meanTerminalWarheadsKilled, 2)}</span>
-        </div>
-      </div>
-    `;
-  }
-
-  // Yield delivery if available
-  if (s.meanKtDelivered != null) {
-    html += `
-      <h3>Yield Delivered</h3>
-      <div class="results-grid">
-        <div class="result-item">
-          <span class="label">Mean Kilotons:</span>
-          <span class="value">${fmt(s.meanKtDelivered, 1)} kt</span>
-        </div>
-        <div class="result-item">
-          <span class="label">P10 / Median / P90:</span>
-          <span class="value">${fmt(s.p10KtDelivered, 0)} / ${fmt(s.medianKtDelivered, 0)} / ${fmt(s.p90KtDelivered, 0)} kt</span>
         </div>
       </div>
     `;
@@ -264,9 +264,11 @@ export function renderResultsContent(params, result) {
 
   // Charts
   if (result.penReal && result.penReal.length > 0) {
+    const deliveredKilotonsSeries = result.deliveredKilotons ?? result.ktDelivered ?? [];
     html += `
       <h3>Distributions</h3>
       <div class="results-charts">
+        ${renderHistogramHTML(deliveredKilotonsSeries, 20, 'Delivered Kilotons', { width: 280, height: 100 })}
         ${renderHistogramHTML(result.penReal, 20, 'Penetrated Real Warheads', { width: 280, height: 100 })}
         ${renderHistogramHTML(result.intReal, 20, 'Intercepted Real Warheads', { width: 280, height: 100 })}
       </div>

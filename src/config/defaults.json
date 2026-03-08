@@ -1,6 +1,7 @@
 {
   "nMissiles": 20,
   "mirvsPerMissile": 5,
+  "kilotonsPerWarhead": 400,
   "decoysPerWarhead": 2,
   "pDetectTrack": 0.80,
   "pClassifyWarhead": 0.80,

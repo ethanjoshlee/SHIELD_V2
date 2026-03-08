@@ -32,6 +32,7 @@ export function computeSummary(arrays, realWarheadsConst, params = {}) {
     boostWarheadsDestroyed = [],
     midcourseWarheadsKilled = [],
     terminalWarheadsKilled = [],
+    deliveredKilotons = [],
     ktDelivered = [],
   } = arrays;
 
@@ -73,12 +74,19 @@ export function computeSummary(arrays, realWarheadsConst, params = {}) {
     summary.meanTerminalWarheadsKilled = mean(terminalWarheadsKilled);
   }
 
-  // Kiloton delivery stats
-  if (ktDelivered.length > 0 && mean(ktDelivered) > 0) {
-    summary.meanKtDelivered = mean(ktDelivered);
-    summary.p10KtDelivered = percentile(ktDelivered, 10);
-    summary.medianKtDelivered = percentile(ktDelivered, 50);
-    summary.p90KtDelivered = percentile(ktDelivered, 90);
+  // Delivered yield stats (kilotons)
+  const deliveredSeries = deliveredKilotons.length > 0 ? deliveredKilotons : ktDelivered;
+  if (deliveredSeries.length > 0) {
+    summary.meanDeliveredKilotons = mean(deliveredSeries);
+    summary.p10DeliveredKilotons = percentile(deliveredSeries, 10);
+    summary.medianDeliveredKilotons = percentile(deliveredSeries, 50);
+    summary.p90DeliveredKilotons = percentile(deliveredSeries, 90);
+
+    // Backward compatibility aliases
+    summary.meanKtDelivered = summary.meanDeliveredKilotons;
+    summary.p10KtDelivered = summary.p10DeliveredKilotons;
+    summary.medianKtDelivered = summary.medianDeliveredKilotons;
+    summary.p90KtDelivered = summary.p90DeliveredKilotons;
   }
 
   // Architecture cost

@@ -6,6 +6,7 @@ export const DEFAULTS = {
   // --- Core scalar params ---
   nMissiles: 80,
   mirvsPerMissile: 5,
+  kilotonsPerWarhead: 400,
   decoysPerWarhead: 2,
   decoysPerMissile: 15,
   pDetectTrack: 0.80,

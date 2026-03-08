@@ -215,14 +215,14 @@ export function renderWizard(container, transitionFn) {
       <div class="wizard-nav">
         <button class="btn btn-back" style="display: none;">← BACK</button>
         <button class="btn btn-next">NEXT →</button>
-        <button class="btn btn-run" style="display: none;">RUN SIMULATION</button>
+        <button class="btn btn-run" style="display: none;">COMPUTE RESULTS</button>
       </div>
     </div>
 
     <div class="wizard-right">
       <div class="project-identity project-identity-right" aria-label="Project identity">
         <div class="project-identity-title">Strategic Homeland Intercept Evaluation<br>and Layered Defense Model</div>
-        <div class="project-identity-attribution">Defense, Emerging Technology, and Strategy Program,<br>Belfer Center for Science and International Affairs</div>
+        <div class="project-identity-attribution">Defense, Emerging Technology, and Strategy Program<br>Belfer Center for Science and International Affairs</div>
       </div>
     </div>
   `;

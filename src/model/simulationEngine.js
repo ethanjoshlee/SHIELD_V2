@@ -44,6 +44,12 @@ function applyTrialDegradation(params) {
 
 const BOOST_TYPES = ["boost_kinetic", "boost_laser"];
 
+function kilotonsPerWarheadFrom(params) {
+  const raw = Number(params.kilotonsPerWarhead);
+  if (!Number.isFinite(raw)) return 400;
+  return Math.max(0, raw);
+}
+
 function doctrineParamsFrom(params) {
   return {
     doctrineMode: params.doctrineMode === 'sls' ? 'sls' : 'barrage',
@@ -184,6 +190,7 @@ function runLegacyTrial(params) {
   const midcourseKineticDoctrine = kineticDoctrineParamsFrom(params, 'midcourseKinetic');
   const boostKineticDoctrine = kineticDoctrineParamsFrom(params, 'boostKinetic');
   const boostDirectedTargetsPerPlatform = directedTargetsPerPlatformFrom(params);
+  const kilotonsPerWarhead = kilotonsPerWarheadFrom(params);
 
   // Neutral compatibility path: preserve existing legacy behavior.
   if (!boostEnabled) {
@@ -245,6 +252,8 @@ function runLegacyTrial(params) {
       }
     }
 
+    const deliveredKilotons = penetratedRealWarheads * kilotonsPerWarhead;
+
     return {
       realWarheads,
       penetratedRealWarheads,
@@ -267,7 +276,8 @@ function runLegacyTrial(params) {
       midcourseWarheadsKilled: interceptedRealWarheads,
       terminalWarheadsEngaged: 0,
       terminalWarheadsKilled: 0,
-      ktDelivered: 0,
+      deliveredKilotons,
+      ktDelivered: deliveredKilotons,
       architectureCost_M: 0,
     };
   }
@@ -370,6 +380,8 @@ function runLegacyTrial(params) {
     }
   }
 
+  const deliveredKilotons = penetratedRealWarheads * kilotonsPerWarhead;
+
   return {
     realWarheads,
     penetratedRealWarheads,
@@ -391,7 +403,8 @@ function runLegacyTrial(params) {
     midcourseWarheadsKilled: interceptedRealWarheads,
     terminalWarheadsEngaged: 0,
     terminalWarheadsKilled: 0,
-    ktDelivered: 0,
+    deliveredKilotons,
+    ktDelivered: deliveredKilotons,
     architectureCost_M: 0,
   };
 }
@@ -444,6 +457,7 @@ function runMultiPhaseTrial(params) {
   const boostKineticDoctrine = kineticDoctrineParamsFrom(params, 'boostKinetic');
   const terminalDoctrine = midcourseKineticDoctrine;
   const boostDirectedTargetsPerPlatform = directedTargetsPerPlatformFrom(params);
+  const kilotonsPerWarhead = kilotonsPerWarheadFrom(params);
 
   // Stats
   let totalRealWarheads = 0;
@@ -666,26 +680,9 @@ function runMultiPhaseTrial(params) {
     }
   }
 
-  // ===================================================================
-  // Kiloton delivery
-  // ===================================================================
-  // penetratedRealWarheads is the count. We need the actual yield.
-  // Reconstruct from surviving warheads that were not intercepted in terminal.
-  // Actually, let's compute it differently: total yield - intercepted yield.
-  // Simpler: track kt as we go. But we can approximate from the warhead objects.
-  // For now, we iterate surviving warheads and count those not intercepted.
-  // Actually, we already know penetratedRealWarheads count. We need yield per warhead.
-  // Since warheads may have different yields (mixed classes), we track ktDelivered separately.
-
-  // Re-walk: the penetrated warheads are those in survivingWarheads that weren't killed in terminal.
-  // Instead of re-walking, let's compute total possible kt and subtract intercepted.
-  let totalKt = 0;
-  for (const m of missiles) {
-    totalKt += m.mirvsPerMissile * m.yieldKt;
-  }
-  // Use average-yield approximation: exact when all warheads have the same yield.
-  const avgYieldKt = totalRealWarheads > 0 ? totalKt / totalRealWarheads : 0;
-  const ktDelivered = penetratedRealWarheads * avgYieldKt;
+  // Simple first-order delivered-yield metric:
+  // penetrating real warheads * user-selected average kilotons per warhead.
+  const deliveredKilotons = penetratedRealWarheads * kilotonsPerWarhead;
 
   // --- Compute total inventory remaining ---
   let totalInventoryRemaining = 0;
@@ -714,7 +711,8 @@ function runMultiPhaseTrial(params) {
     midcourseWarheadsKilled,
     terminalWarheadsEngaged,
     terminalWarheadsKilled,
-    ktDelivered,
+    deliveredKilotons,
+    ktDelivered: deliveredKilotons,
     architectureCost_M: 0, // computed in metrics, not per-trial
   };
 }
