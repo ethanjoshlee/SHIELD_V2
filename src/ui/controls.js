@@ -374,7 +374,7 @@ export function blueParamsHTML(d) {
   return `
     <div class="wizard-param-group">
       <div class="wizard-param-pair">
-        ${probSlider('Detection and tracking probability', 'pDetectTrack', pdt)}
+        ${probSlider('Baseline missile and object detection/tracking probability', 'pDetectTrack', pdt)}
         ${probSlider('Warhead classification accuracy', 'pClassifyWarhead', pcw)}
       </div>
       <div class="wizard-param-pair">

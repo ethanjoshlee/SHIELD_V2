@@ -23,7 +23,7 @@ export function renderResultsScreen(container, data, transitionFn) {
   el.innerHTML = `
     <div class="results-left">
       <div class="results-header">
-        <div class="results-title">MODEL OUTPUT</div>
+        <div class="results-title">MODEL RESULTS</div>
         <div class="results-scenario">
           <span class="results-scenario-blue">DEF: ${blueLabel}</span>
           <span class="results-scenario-red">ATK: ${redLabel}</span>

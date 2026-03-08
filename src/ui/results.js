@@ -92,7 +92,7 @@ export function renderResultsContent(params, result) {
           <span class="value">${totalObjects}</span>
         </div>
         <div class="result-item">
-          <span class="label">Detection and tracking:</span>
+          <span class="label">Baseline missile and object detection/tracking probability:</span>
           <span class="value">${fmt(params.pDetectTrack, 2)}</span>
         </div>
         <div class="result-item">
@@ -172,7 +172,7 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(availabilityMultiplier, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Space-based boost detection/tracking multiplier:</span>
+          <span class="label">Boost-phase detection/tracking multiplier:</span>
           <span class="value">${fmt(detectionMultiplier, 2)}</span>
         </div>
         <div class="result-item">

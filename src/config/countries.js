@@ -60,7 +60,7 @@ export const COUNTRIES = {
           phase: "terminal",
         },
       },
-      pDetectTrack: 0.85,
+      pDetectTrack: 0.98,
       pClassifyWarhead: 0.80,
       pFalseAlarmDecoy: 0.20,
       doctrineMode: "sls",

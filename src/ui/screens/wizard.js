@@ -17,9 +17,9 @@ import { createHudOverlay } from '../globe/hudOverlay.js';
 import { blueParamsHTML, redParamsHTML, simParamsHTML, readParamsFromUI } from '../controls.js';
 
 const STEPS = [
-  { key: 'blue', title: 'SELECT BLUE', subtitle: 'Defending country and capabilities', number: '01 / 03' },
-  { key: 'red',  title: 'SELECT RED', subtitle: 'Attack profile', number: '02 / 03' },
-  { key: 'sim',  title: 'SIMULATION', subtitle: 'Rules and reliability', number: '03 / 03' },
+  { key: 'blue', title: 'CONFIGURE BLUE', subtitle: 'Defense capabilities and parameters', number: '01 / 03' },
+  { key: 'red',  title: 'CONFIGURE RED', subtitle: 'Attack capabilities and parameters', number: '02 / 03' },
+  { key: 'sim',  title: 'MODEL COMPUTATION', subtitle: 'Trial settings and model parameters', number: '03 / 03' },
 ];
 
 const DOCTRINE_GROUPS = [
@@ -36,6 +36,46 @@ const DOCTRINE_GROUPS = [
     slsClass: 'doctrine-boost-kinetic-sls-only',
   },
 ];
+
+function resolveBluePresetParamValue(bluePreset, param) {
+  if (!bluePreset) return undefined;
+  if (bluePreset[param] !== undefined && bluePreset[param] !== null) {
+    return bluePreset[param];
+  }
+
+  switch (param) {
+    case 'nInventory':
+      return bluePreset.interceptors?.midcourse_gbi?.deployed;
+    case 'pkWarhead':
+      return bluePreset.interceptors?.midcourse_gbi?.pk;
+    case 'nSpaceBoostKinetic':
+      return bluePreset.interceptors?.boost_kinetic?.deployed;
+    case 'pkSpaceBoostKinetic':
+      return bluePreset.interceptors?.boost_kinetic?.pk;
+    case 'nSpaceBoostDirected':
+      return bluePreset.interceptors?.boost_laser?.deployed;
+    case 'pkSpaceBoostDirected':
+      return bluePreset.interceptors?.boost_laser?.pk;
+    case 'midcourseKineticDoctrineMode':
+      return bluePreset.doctrineMode;
+    case 'midcourseKineticShotsPerTarget':
+      return bluePreset.shotsPerTarget;
+    case 'midcourseKineticMaxShotsPerTarget':
+      return bluePreset.maxShotsPerTarget;
+    case 'midcourseKineticPReengage':
+      return bluePreset.pReengage;
+    case 'boostKineticDoctrineMode':
+      return bluePreset.doctrineMode;
+    case 'boostKineticShotsPerTarget':
+      return bluePreset.shotsPerTarget;
+    case 'boostKineticMaxShotsPerTarget':
+      return bluePreset.maxShotsPerTarget;
+    case 'boostKineticPReengage':
+      return bluePreset.pReengage;
+    default:
+      return undefined;
+  }
+}
 
 export function renderWizard(container, transitionFn) {
   // All wizard state is local — fresh on every invocation
@@ -150,13 +190,20 @@ export function renderWizard(container, transitionFn) {
       selectedBlue = key;
       const blue = COUNTRIES.blue[key];
       if (blue) {
-        const mappings = [
-          ['pkSpaceBoostKinetic', blue.pkSpaceBoostKinetic ?? blue.interceptors?.boost_kinetic?.pk],
-          ['pkSpaceBoostDirected', blue.pkSpaceBoostDirected ?? blue.interceptors?.boost_laser?.pk],
-        ];
-        for (const [param, val] of mappings) {
-          if (val === undefined || val === null) continue;
-          setParamValue(param, val);
+        const blueStepParams = Array.from(
+          new Set(
+            Array.from(
+              el.querySelectorAll('.step-params[data-step="blue"] [data-param]')
+            ).map((node) => node.dataset.param).filter(Boolean)
+          )
+        );
+
+        for (const param of blueStepParams) {
+          const presetValue = resolveBluePresetParamValue(blue, param);
+          const fallbackValue = resolveBluePresetParamValue(DEFAULTS, param);
+          const nextValue = presetValue ?? DEFAULTS[param] ?? fallbackValue;
+          if (nextValue === undefined || nextValue === null) continue;
+          setParamValue(param, nextValue);
         }
       }
     } else {
