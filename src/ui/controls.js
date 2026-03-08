@@ -320,6 +320,20 @@ function intSlider(label, param, min, max, step, defaultVal) {
     </div>`;
 }
 
+function degradationSlider(label, param, multiplier, minPct = 0.1) {
+  const m = Math.max(0, Math.min(1, Number(multiplier)));
+  const degradationPct = (1 - m) * 100;
+  return `
+    <div class="wizard-slider-row">
+      <div class="wizard-slider-header">
+        <span class="wizard-slider-label">${label}</span>
+        <span class="wizard-slider-value">${degradationPct.toFixed(1)}%</span>
+      </div>
+      <input type="range" class="wizard-slider" min="${minPct}" max="99.9" step="0.1" value="${degradationPct.toFixed(1)}" data-degrade-target="${param}" />
+      <input type="number" class="wizard-hidden-param" data-param="${param}" value="${m.toFixed(4)}" tabindex="-1" aria-hidden="true" />
+    </div>`;
+}
+
 /**
  * BLUE step parameters (defender capabilities + engagement doctrine).
  * 2-column layout for paired controls.
@@ -343,6 +357,9 @@ export function blueParamsHTML(d) {
   const pkbK = ((d.pkSpaceBoostKinetic ?? 0.5) * 100).toFixed(1);
   const pkbD = ((d.pkSpaceBoostDirected ?? 0.4) * 100).toFixed(1);
   const boostDirectedTargetsPerPlatform = d.boostDirectedTargetsPerPlatform ?? 2;
+  const pSystemUpPct = ((d.pSystemUp ?? 0.9) * 100).toFixed(1);
+  const detectDegradeFactor = d.detectDegradeFactor ?? 0.5;
+  const pkDegradeFactor = d.pkDegradeFactor ?? 0.7;
   const doctrineToggleHTML = (label, param, mode) => `
       <div class="wizard-slider-row">
         <div class="wizard-slider-header">
@@ -394,6 +411,12 @@ export function blueParamsHTML(d) {
         ${probSlider('Hypothetical space-based directed-energy boost interceptor kill probability', 'pkSpaceBoostDirected', pkbD)}
       </div>
       ${intSlider('Directed-energy boost engagement opportunities per platform', 'boostDirectedTargetsPerPlatform', 1, 9, 1, boostDirectedTargetsPerPlatform)}
+      <h5>Blue system resilience assumptions</h5>
+      ${probSlider('Blue system operational availability', 'pSystemUp', pSystemUpPct)}
+      <div class="wizard-param-pair">
+        ${degradationSlider('Detection/tracking degradation when the Blue system fails', 'detectDegradeFactor', detectDegradeFactor)}
+        ${degradationSlider('Interceptor kill-probability degradation when the Blue system fails', 'pkDegradeFactor', pkDegradeFactor)}
+      </div>
 
       ${doctrineToggleHTML(
         'Ground-based kinetic midcourse engagement doctrine',
@@ -475,8 +498,7 @@ export function redParamsHTML(d) {
 
 /**
  * SIM step parameters (minimal: trials + seed only).
- * Reliability params (pSystemUp, detectDegradeFactor, pkDegradeFactor) use silent DEFAULTS.
- * Hidden inputs ensure readParamsFromUI() still finds all needed params.
+ * Reliability assumptions are configured on the BLUE step.
  */
 export function simParamsHTML(d) {
   return `
@@ -489,9 +511,6 @@ export function simParamsHTML(d) {
         <input type="text" class="wizard-text-input" data-param="seed" placeholder="auto" value="${d.seed ?? ''}" />
       </div>
     </div>
-    <input type="number" class="wizard-hidden-param" data-param="pSystemUp" value="${d.pSystemUp}" tabindex="-1" aria-hidden="true" />
-    <input type="number" class="wizard-hidden-param" data-param="detectDegradeFactor" value="${d.detectDegradeFactor}" tabindex="-1" aria-hidden="true" />
-    <input type="number" class="wizard-hidden-param" data-param="pkDegradeFactor" value="${d.pkDegradeFactor}" tabindex="-1" aria-hidden="true" />
   `;
 }
 

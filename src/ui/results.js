@@ -6,6 +6,37 @@ import { fmt } from '../utils/format.js';
 import { renderHistogramHTML } from './charts.js';
 import { buildBoostScenario } from '../model/scenarioLayer.js';
 
+function distributionChartOptions(distributionTitle) {
+  const shared = {
+    height: 250,
+    showTitle: false,
+    yLabel: 'Number of Trials',
+    yTargetTicks: 5,
+  };
+  if (distributionTitle === 'Delivered Kilotons') {
+    return {
+      ...shared,
+      xLabel: 'Delivered Kilotons',
+      binStrategy: 'continuous',
+      bins: 40,
+    };
+  }
+  if (distributionTitle === 'Penetrated Real Warheads') {
+    return {
+      ...shared,
+      xLabel: 'Penetrated Real Warheads',
+      binStrategy: 'integer',
+      bins: 30,
+    };
+  }
+  return {
+    ...shared,
+    xLabel: 'Intercepted Real Warheads',
+    binStrategy: 'integer',
+    bins: 30,
+  };
+}
+
 export function renderResultsContent(params, result) {
   const s = result.summary;
 
@@ -94,6 +125,18 @@ export function renderResultsContent(params, result) {
         <div class="result-item">
           <span class="label">Baseline missile and object detection/tracking probability:</span>
           <span class="value">${fmt(params.pDetectTrack, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Blue system operational availability:</span>
+          <span class="value">${fmt(params.pSystemUp, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Detection/tracking degradation when the Blue system fails:</span>
+          <span class="value">${fmt(1 - params.detectDegradeFactor, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Interceptor kill-probability degradation when the Blue system fails:</span>
+          <span class="value">${fmt(1 - params.pkDegradeFactor, 2)}</span>
         </div>
         <div class="result-item">
           <span class="label">Warhead classification accuracy:</span>
@@ -239,25 +282,13 @@ export function renderResultsContent(params, result) {
     `;
   }
 
-  // Common mode reliability
+  // Output-only diagnostic for common-mode uptime realization.
   html += `
-    <h3>Reliability</h3>
+    <h3>System Diagnostics</h3>
     <div class="results-grid">
       <div class="result-item">
-        <span class="label">P(System Up):</span>
-        <span class="value">${fmt(params.pSystemUp, 2)}</span>
-      </div>
-      <div class="result-item">
-        <span class="label">Observed System Up:</span>
+        <span class="label">Observed Blue system operational rate:</span>
         <span class="value">${fmt(s.meanSystemUp, 2)}</span>
-      </div>
-      <div class="result-item">
-        <span class="label">Detect Degrade Factor:</span>
-        <span class="value">${fmt(params.detectDegradeFactor, 2)}</span>
-      </div>
-      <div class="result-item">
-        <span class="label">Pk Degrade Factor:</span>
-        <span class="value">${fmt(params.pkDegradeFactor, 2)}</span>
       </div>
     </div>
   `;
@@ -265,12 +296,29 @@ export function renderResultsContent(params, result) {
   // Charts
   if (result.penReal && result.penReal.length > 0) {
     const deliveredKilotonsSeries = result.deliveredKilotons ?? result.ktDelivered ?? [];
+    const defaultDistTitle = 'Delivered Kilotons';
+    const defaultDistChartOptions = distributionChartOptions(defaultDistTitle);
     html += `
       <h3>Distributions</h3>
-      <div class="results-charts">
-        ${renderHistogramHTML(deliveredKilotonsSeries, 20, 'Delivered Kilotons', { width: 280, height: 100 })}
-        ${renderHistogramHTML(result.penReal, 20, 'Penetrated Real Warheads', { width: 280, height: 100 })}
-        ${renderHistogramHTML(result.intReal, 20, 'Intercepted Real Warheads', { width: 280, height: 100 })}
+      <div class="results-distribution-viewer" data-dist-viewer>
+        <div class="results-dist-toolbar">
+          <div class="results-dist-head">
+            <div class="results-dist-active-title" data-dist-title>${defaultDistTitle}</div>
+            <div class="results-dist-index" data-dist-index>1 / 3</div>
+          </div>
+          <div class="results-dist-nav">
+            <button class="results-dist-nav-btn" type="button" data-dist-nav="prev" aria-label="Previous distribution">←</button>
+            <button class="results-dist-nav-btn" type="button" data-dist-nav="next" aria-label="Next distribution">→</button>
+          </div>
+        </div>
+        <div class="results-dist-stage" data-dist-stage>
+          ${renderHistogramHTML(
+            deliveredKilotonsSeries,
+            defaultDistChartOptions.bins,
+            defaultDistTitle,
+            defaultDistChartOptions
+          )}
+        </div>
       </div>
     `;
   }

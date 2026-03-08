@@ -11,6 +11,77 @@ import { initGlobe, startAnimation, setupInteraction, getGlobeGroup, getScene } 
 import { createCountriesLayer, setHighlightedCountries } from '../globe/countriesLayer.js';
 import { createHudOverlay } from '../globe/hudOverlay.js';
 import { renderResultsContent } from '../results.js';
+import { renderHistogramHTML } from '../charts.js';
+
+function distributionChartOptions(distributionTitle) {
+  const shared = {
+    height: 250,
+    showTitle: false,
+    yLabel: 'Number of Trials',
+    yTargetTicks: 5,
+  };
+  if (distributionTitle === 'Delivered Kilotons') {
+    return {
+      ...shared,
+      xLabel: 'Delivered Kilotons',
+      binStrategy: 'continuous',
+      bins: 40,
+    };
+  }
+  if (distributionTitle === 'Penetrated Real Warheads') {
+    return {
+      ...shared,
+      xLabel: 'Penetrated Real Warheads',
+      binStrategy: 'integer',
+      bins: 30,
+    };
+  }
+  return {
+    ...shared,
+    xLabel: 'Intercepted Real Warheads',
+    binStrategy: 'integer',
+    bins: 30,
+  };
+}
+
+function initDistributionViewer(rootEl, runResult) {
+  const viewer = rootEl.querySelector('[data-dist-viewer]');
+  if (!viewer) return;
+
+  const titleEl = viewer.querySelector('[data-dist-title]');
+  const indexEl = viewer.querySelector('[data-dist-index]');
+  const stageEl = viewer.querySelector('[data-dist-stage]');
+  const prevBtn = viewer.querySelector('[data-dist-nav="prev"]');
+  const nextBtn = viewer.querySelector('[data-dist-nav="next"]');
+  if (!titleEl || !indexEl || !stageEl || !prevBtn || !nextBtn) return;
+
+  const distributions = [
+    { title: 'Delivered Kilotons', values: runResult.deliveredKilotons ?? runResult.ktDelivered ?? [] },
+    { title: 'Penetrated Real Warheads', values: runResult.penReal ?? [] },
+    { title: 'Intercepted Real Warheads', values: runResult.intReal ?? [] },
+  ];
+
+  let activeIndex = 0;
+
+  const renderActive = () => {
+    const active = distributions[activeIndex];
+    titleEl.textContent = active.title;
+    indexEl.textContent = `${activeIndex + 1} / ${distributions.length}`;
+    const chartOpts = distributionChartOptions(active.title);
+    stageEl.innerHTML = renderHistogramHTML(active.values, chartOpts.bins, active.title, chartOpts);
+  };
+
+  prevBtn.addEventListener('click', () => {
+    activeIndex = (activeIndex - 1 + distributions.length) % distributions.length;
+    renderActive();
+  });
+  nextBtn.addEventListener('click', () => {
+    activeIndex = (activeIndex + 1) % distributions.length;
+    renderActive();
+  });
+
+  renderActive();
+}
 
 export function renderResultsScreen(container, data, transitionFn) {
   const { blueKey, redKey, runParams, runResult, runElapsed } = data;
@@ -56,6 +127,7 @@ export function renderResultsScreen(container, data, transitionFn) {
   setHighlightedCountries([blueKey, redKey]);
   startAnimation();
   setupInteraction(globeContainer);
+  initDistributionViewer(el, runResult);
 
   el.querySelector('.btn-reset').addEventListener('click', () => {
     transitionFn(STATES.WIZARD);

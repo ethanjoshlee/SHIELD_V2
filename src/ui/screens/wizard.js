@@ -233,6 +233,14 @@ export function renderWizard(container, transitionFn) {
         probRange.value = (parseFloat(val) * 100).toFixed(1);
         probRange.dispatchEvent(new Event('input', { bubbles: true }));
       }
+      const degradeRange = el.querySelector(`[data-degrade-target="${param}"]`);
+      if (degradeRange) {
+        const factor = parseFloat(val);
+        if (Number.isFinite(factor)) {
+          degradeRange.value = (100 - factor * 100).toFixed(1);
+          degradeRange.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
 
       const input = el.querySelector(`[data-param="${param}"]`);
       if (!input) return;
@@ -378,6 +386,18 @@ export function renderWizard(container, transitionFn) {
     const sync = () => {
       if (valueEl) valueEl.textContent = parseFloat(range.value).toFixed(1) + '%';
       if (hidden) hidden.value = (parseFloat(range.value) / 100).toFixed(4);
+    };
+    range.addEventListener('input', sync);
+    sync();
+  });
+  el.querySelectorAll('[data-degrade-target]').forEach(range => {
+    const paramId = range.dataset.degradeTarget;
+    const hidden = el.querySelector(`[data-param="${paramId}"]`);
+    const valueEl = range.closest('.wizard-slider-row').querySelector('.wizard-slider-value');
+    const sync = () => {
+      const degradation = parseFloat(range.value);
+      if (valueEl) valueEl.textContent = degradation.toFixed(1) + '%';
+      if (hidden) hidden.value = (1 - (degradation / 100)).toFixed(4);
     };
     range.addEventListener('input', sync);
     sync();
