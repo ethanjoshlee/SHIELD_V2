@@ -19,10 +19,24 @@ function niceStep(rawStep) {
   return niceFraction * base;
 }
 
-function nextNiceIntegerStep(step) {
-  if (step <= 1) return 2;
-  if (step <= 2) return 5;
-  return step * 2;
+function nonZeroRatio(counts) {
+  if (!counts.length) return 0;
+  let nonZero = 0;
+  for (const c of counts) {
+    if (c > 0) nonZero += 1;
+  }
+  return nonZero / counts.length;
+}
+
+function buildCounts(minEdge, span, binCount, arr) {
+  const counts = new Array(binCount).fill(0);
+  for (const v of arr) {
+    let idx = Math.floor(((v - minEdge) / span) * binCount);
+    if (idx < 0) idx = 0;
+    if (idx >= binCount) idx = binCount - 1;
+    counts[idx] += 1;
+  }
+  return counts;
 }
 
 function buildContinuousBins(arr, opts) {
@@ -35,17 +49,25 @@ function buildContinuousBins(arr, opts) {
   const minBins = opts.minBins ?? 28;
   const maxBins = opts.maxBins ?? 56;
   const targetBins = opts.targetBins ?? Math.round(Math.sqrt(arr.length));
-  const binCount = clamp(targetBins, minBins, maxBins);
   const span = maxV - minV;
-  const binWidth = span / binCount;
-  const counts = new Array(binCount).fill(0);
+  const minNonZeroRatio = clamp(opts.minNonZeroRatio ?? 0.42, 0.1, 1);
 
-  for (const v of arr) {
-    let idx = Math.floor(((v - minV) / span) * binCount);
-    if (idx < 0) idx = 0;
-    if (idx >= binCount) idx = binCount - 1;
-    counts[idx] += 1;
+  let binCount = clamp(targetBins, minBins, maxBins);
+  let counts = [];
+  while (true) {
+    counts = buildCounts(minV, span, binCount, arr);
+    const ratio = nonZeroRatio(counts);
+    if (ratio >= minNonZeroRatio || binCount <= minBins) break;
+
+    const nextBinCount = Math.max(minBins, Math.floor(binCount * 0.88));
+    if (nextBinCount === binCount) {
+      if (binCount <= minBins) break;
+      binCount -= 1;
+    } else {
+      binCount = nextBinCount;
+    }
   }
+  const binWidth = span / binCount;
 
   return {
     counts,
@@ -62,30 +84,37 @@ function buildContinuousBins(arr, opts) {
 function buildIntegerAlignedBins(arr, opts) {
   const minInt = Math.floor(Math.min(...arr));
   const maxInt = Math.ceil(Math.max(...arr));
-  const minBins = opts.minBins ?? 12;
-  const maxBins = opts.maxBins ?? 48;
+  const maxBins = opts.maxBins ?? 72;
+  const minNonZeroRatio = clamp(opts.minNonZeroRatio ?? 0.35, 0.1, 1);
+  const minReadableBins = opts.minReadableBins ?? 18;
   const valueSpan = Math.max(1, maxInt - minInt + 1);
 
-  let binWidth = 1;
-  while (Math.ceil(valueSpan / binWidth) > maxBins) {
-    binWidth = nextNiceIntegerStep(binWidth);
-  }
-  while (Math.ceil(valueSpan / binWidth) < minBins && binWidth > 1) {
-    binWidth = Math.max(1, Math.floor(binWidth / 2));
-  }
+  // Preserve one-integer bins unless the observed span is wide enough that
+  // one-bin-per-integer would exceed readability limits for the viewer width.
+  let binWidth = valueSpan > maxBins ? Math.ceil(valueSpan / maxBins) : 1;
+  let counts = [];
+  let binCount = 0;
+  let minEdge = 0;
+  let maxEdge = 0;
 
-  const binCount = Math.max(1, Math.ceil(valueSpan / binWidth));
-  const minEdge = minInt - 0.5;
-  const maxEdge = minEdge + binCount * binWidth;
-  const counts = new Array(binCount).fill(0);
+  while (true) {
+    binCount = Math.max(1, Math.ceil(valueSpan / binWidth));
+    minEdge = minInt - 0.5;
+    maxEdge = minEdge + binCount * binWidth;
+    counts = new Array(binCount).fill(0);
 
-  for (const raw of arr) {
-    const v = Number(raw);
-    if (!Number.isFinite(v)) continue;
-    let idx = Math.floor((v - minEdge) / binWidth);
-    if (idx < 0) idx = 0;
-    if (idx >= binCount) idx = binCount - 1;
-    counts[idx] += 1;
+    for (const raw of arr) {
+      const v = Number(raw);
+      if (!Number.isFinite(v)) continue;
+      let idx = Math.floor((v - minEdge) / binWidth);
+      if (idx < 0) idx = 0;
+      if (idx >= binCount) idx = binCount - 1;
+      counts[idx] += 1;
+    }
+
+    const ratio = nonZeroRatio(counts);
+    if (ratio >= minNonZeroRatio || binCount <= minReadableBins) break;
+    binWidth += 1;
   }
 
   return {
@@ -139,6 +168,19 @@ function formatBinEdge(value, forceInteger = false) {
   return value.toFixed(2);
 }
 
+function resolveVisualSubBins(parentBinCount, opts = {}) {
+  const minSubBins = Math.round(clamp(opts?.minVisualSubBins ?? 1, 1, 24));
+  const maxSubBins = Math.round(clamp(opts?.maxVisualSubBins ?? 8, minSubBins, 24));
+  const targetVisualSlots = Number(opts?.targetVisualSlots);
+  if (Number.isFinite(targetVisualSlots) && targetVisualSlots > 0 && parentBinCount > 0) {
+    const desired = Math.round(targetVisualSlots / parentBinCount);
+    return clamp(desired, minSubBins, maxSubBins);
+  }
+  const fallbackRaw = Number(opts?.visualSubBins ?? opts?.integerVisualSubBins ?? 1);
+  const fallback = Number.isFinite(fallbackRaw) ? fallbackRaw : 1;
+  return clamp(Math.round(fallback), minSubBins, maxSubBins);
+}
+
 /**
  * Make a lightweight histogram (HTML bars) for an array of numbers.
  * @param {number[]} arr
@@ -162,13 +204,19 @@ export function renderHistogramHTML(arr, bins, title, opts = {}) {
 
   const histogram =
     binStrategy === 'integer'
-      ? buildIntegerAlignedBins(arr, { minBins: 12, maxBins: 42 })
+      ? buildIntegerAlignedBins(arr, {
+          maxBins: opts?.integerMaxBins ?? 72,
+          minNonZeroRatio: opts?.integerMinNonZeroRatio ?? 0.35,
+          minReadableBins: opts?.integerMinReadableBins ?? 18,
+        })
       : buildContinuousBins(arr, {
-          minBins: 30,
-          maxBins: 52,
+          minBins: opts?.continuousMinBins ?? 48,
+          maxBins: opts?.continuousMaxBins ?? 88,
           targetBins: bins,
+          minNonZeroRatio: opts?.continuousMinNonZeroRatio ?? 0.42,
         });
   const { counts, minEdge, maxEdge, binWidth, xTickMin, xTickMax, xIsInteger } = histogram;
+  const visualSubBins = resolveVisualSubBins(counts.length, opts);
 
   const maxC = Math.max(...counts);
   const yHeadroom = opts?.yHeadroom ?? 0.12;
@@ -194,7 +242,11 @@ export function renderHistogramHTML(arr, bins, title, opts = {}) {
         ? `[${loText}, ${hiText}]`
         : `[${loText}, ${hiText})`;
       const tooltip = `${title}\nBin: ${intervalText}\nCount: ${c.toLocaleString('en-US')}`;
-      return `<div class="chart-bar" title="${tooltip}" style="height:${barH}%"></div>`;
+      return `
+        <div class="chart-parent-bin" title="${tooltip}" style="--bin-height:${barH}%">
+          ${'<span class="chart-bin-segment"></span>'.repeat(visualSubBins)}
+        </div>
+      `;
     })
     .join("");
   const yTicksHtml = yTicks

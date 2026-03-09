@@ -19,13 +19,19 @@ function distributionChartOptions(distributionTitle) {
     showTitle: false,
     yLabel: 'Number of Trials',
     yTargetTicks: 5,
+    targetVisualSlots: 120,
+    minVisualSubBins: 1,
+    maxVisualSubBins: 12,
   };
   if (distributionTitle === 'Delivered Kilotons') {
     return {
       ...shared,
       xLabel: 'Delivered Kilotons',
       binStrategy: 'continuous',
-      bins: 40,
+      bins: 96,
+      continuousMinBins: 44,
+      continuousMaxBins: 140,
+      continuousMinNonZeroRatio: 0.5,
     };
   }
   if (distributionTitle === 'Penetrated Real Warheads') {
@@ -33,14 +39,20 @@ function distributionChartOptions(distributionTitle) {
       ...shared,
       xLabel: 'Penetrated Real Warheads',
       binStrategy: 'integer',
-      bins: 30,
+      bins: 64,
+      integerMaxBins: 96,
+      integerMinNonZeroRatio: 0.35,
+      integerMinReadableBins: 18,
     };
   }
   return {
     ...shared,
     xLabel: 'Intercepted Real Warheads',
     binStrategy: 'integer',
-    bins: 30,
+    bins: 64,
+    integerMaxBins: 96,
+    integerMinNonZeroRatio: 0.35,
+    integerMinReadableBins: 18,
   };
 }
 
