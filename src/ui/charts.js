@@ -129,6 +129,52 @@ function buildIntegerAlignedBins(arr, opts) {
   };
 }
 
+function sanitizePositiveNumber(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+function snapToStepLevel(value, stepSize) {
+  const rawLevel = value / stepSize;
+  const snappedLevel = Math.round(rawLevel);
+  const tolerance = Number.EPSILON * Math.max(1, Math.abs(rawLevel)) * 16;
+  if (Math.abs(rawLevel - snappedLevel) <= tolerance) return snappedLevel;
+  return snappedLevel;
+}
+
+function buildStepDiscreteBins(arr, opts) {
+  const stepSize = sanitizePositiveNumber(opts?.stepSize, 1);
+  const normalizedLevels = [];
+  for (const raw of arr) {
+    const value = Number(raw);
+    if (!Number.isFinite(value)) continue;
+    normalizedLevels.push(snapToStepLevel(value, stepSize));
+  }
+
+  const levelHistogram = buildIntegerAlignedBins(normalizedLevels, {
+    maxBins: opts?.maxBins,
+    minNonZeroRatio: opts?.minNonZeroRatio,
+    minReadableBins: opts?.minReadableBins,
+  });
+
+  return {
+    counts: levelHistogram.counts,
+    binCount: levelHistogram.binCount,
+    minEdge: levelHistogram.minEdge * stepSize,
+    maxEdge: levelHistogram.maxEdge * stepSize,
+    binWidth: levelHistogram.binWidth * stepSize,
+    xTickMin: levelHistogram.xTickMin * stepSize,
+    xTickMax: levelHistogram.xTickMax * stepSize,
+    xIsInteger: Number.isInteger(stepSize),
+    stepDiscrete: {
+      stepSize,
+      minLevel: levelHistogram.xTickMin,
+      binWidthLevels: levelHistogram.binWidth,
+    },
+  };
+}
+
 function buildTicks(min, max, targetCount, forceInteger = false) {
   if (!Number.isFinite(min) || !Number.isFinite(max)) return [0];
   if (min === max) return [min];
@@ -166,6 +212,189 @@ function formatBinEdge(value, forceInteger = false) {
   if (Math.abs(value) >= 1000) return Math.round(value).toLocaleString('en-US');
   if (Math.abs(value) >= 100) return value.toFixed(1);
   return value.toFixed(2);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function escapeHtmlAttr(value) {
+  return escapeHtml(value).replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+}
+
+function formatReferenceValueKt(value) {
+  return Number(value).toLocaleString('en-US', { maximumFractionDigits: 3 });
+}
+
+function categoryDescription(category) {
+  if (category === 'nuclear') return 'Nuclear yield benchmark';
+  return 'Conventional bomb/ordnance mass benchmark (mass converted using 1,000 tons = 1 kt)';
+}
+
+function shortReferenceLabel(label) {
+  const base = String(label).split(' (')[0].trim();
+  if (base.length <= 26) return base;
+  return `${base.slice(0, 23)}...`;
+}
+
+function selectVisibleReferenceMarkers(candidates, maxVisible) {
+  if (candidates.length <= maxVisible) return candidates.slice();
+
+  const selectedIndices = new Set();
+  if (maxVisible <= 1) {
+    selectedIndices.add(Math.floor((candidates.length - 1) / 2));
+  } else {
+    for (let i = 0; i < maxVisible; i++) {
+      const idx = Math.round((i * (candidates.length - 1)) / (maxVisible - 1));
+      selectedIndices.add(idx);
+    }
+  }
+
+  if (selectedIndices.size < maxVisible) {
+    for (let i = 0; i < candidates.length && selectedIndices.size < maxVisible; i++) {
+      selectedIndices.add(i);
+    }
+  }
+
+  return Array.from(selectedIndices)
+    .sort((a, b) => a - b)
+    .map((idx) => candidates[idx]);
+}
+
+function selectFallbackAnchorMarker(referenceMarkers, axisMax, plotMin, plotMax) {
+  if (!Array.isArray(referenceMarkers) || !referenceMarkers.length) return null;
+  const eligible = referenceMarkers
+    .map((marker) => {
+      const valueKt = Number(marker?.valueKt);
+      if (!Number.isFinite(valueKt)) return null;
+      if (valueKt > axisMax) return null;
+      return {
+        ...marker,
+        valueKt,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (b.valueKt - a.valueKt) || String(a.id).localeCompare(String(b.id)));
+
+  if (!eligible.length) return null;
+  const anchor = eligible[0];
+  const plotSpan = plotMax - plotMin;
+  const rawPct = plotSpan > 0 ? ((anchor.valueKt - plotMin) / plotSpan) * 100 : 0;
+  return {
+    ...anchor,
+    pct: clamp(rawPct, 0, 100),
+    rawPct,
+    isFallbackAnchor: true,
+  };
+}
+
+function resolveReferenceMarkers(referenceMarkers, chartDomain, opts = {}) {
+  if (!Array.isArray(referenceMarkers) || !referenceMarkers.length) return [];
+  const { axisMin, axisMax, plotMin, plotMax } = chartDomain;
+  if (!Number.isFinite(axisMin) || !Number.isFinite(axisMax) || axisMax < axisMin) return [];
+  if (!Number.isFinite(plotMin) || !Number.isFinite(plotMax) || plotMax <= plotMin) return [];
+
+  const maxVisible = Math.max(1, Math.round(Number(opts?.maxVisibleReferenceMarkers) || 7));
+  const maxLabels = Math.max(0, Math.round(Number(opts?.maxVisibleReferenceLabels) || 4));
+  const minLabelGapPct = clamp(Number(opts?.referenceLabelMinGapPct) || 10, 2, 100);
+  const plotSpan = plotMax - plotMin;
+
+  const candidates = referenceMarkers
+    .map((marker) => {
+      const valueKt = Number(marker?.valueKt);
+      if (!Number.isFinite(valueKt)) return null;
+      if (valueKt < axisMin || valueKt > axisMax) return null;
+      const pct = ((valueKt - plotMin) / plotSpan) * 100;
+      if (!Number.isFinite(pct) || pct < 0 || pct > 100) return null;
+      return {
+        ...marker,
+        valueKt,
+        pct,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a.valueKt - b.valueKt) || String(a.id).localeCompare(String(b.id)));
+
+  let visible = selectVisibleReferenceMarkers(candidates, maxVisible);
+  if (!visible.length) {
+    const fallbackAnchor = selectFallbackAnchorMarker(referenceMarkers, axisMax, plotMin, plotMax);
+    if (fallbackAnchor) visible = [fallbackAnchor];
+  }
+  let labelsUsed = 0;
+  let lastLabeledPct = -Infinity;
+
+  return visible.map((marker, idx) => {
+    let showLabel = false;
+    if (maxLabels > 0) {
+      const farEnough = marker.pct - lastLabeledPct >= minLabelGapPct;
+      const isFirst = idx === 0;
+      if ((isFirst || farEnough) && labelsUsed < maxLabels) {
+        showLabel = true;
+        labelsUsed += 1;
+        lastLabeledPct = marker.pct;
+      }
+    }
+    return {
+      ...marker,
+      showLabel,
+      shortLabel: shortReferenceLabel(marker.label),
+    };
+  });
+}
+
+function buildReferenceTooltip(marker) {
+  const lines = [
+    `${marker.label}`,
+    `Value: ${formatReferenceValueKt(marker.valueKt)} kt`,
+    `Type: ${categoryDescription(marker.category)}`,
+    `Scope: ${marker.scope}`,
+    `Source measure: ${marker.sourceMeasure}`,
+    `Source note: ${marker.sourceNote}`,
+    `Source: ${marker.sourceUrl}`,
+  ];
+  if (marker.isFallbackAnchor && marker.rawPct < 0) {
+    lines.push('Display note: benchmark is below the visible x-domain; anchored at left edge for scale context.');
+  }
+  return lines.join('\n');
+}
+
+function buildReferenceMarkersHtml(referenceMarkers, chartDomain, opts = {}) {
+  const resolved = resolveReferenceMarkers(referenceMarkers, chartDomain, opts);
+  if (!resolved.length) return '';
+
+  const markersHtml = resolved
+    .map((marker) => {
+      const edgeClass =
+        marker.pct <= 4
+          ? ' chart-reference-marker--start'
+          : marker.pct >= 96
+            ? ' chart-reference-marker--end'
+            : '';
+      const kindClass = marker.category === 'nuclear'
+        ? ' chart-reference-marker--nuclear'
+        : ' chart-reference-marker--conventional';
+      const tooltipText = buildReferenceTooltip(marker);
+      const tooltipAttr = escapeHtmlAttr(tooltipText);
+      const tooltipHtml = escapeHtml(tooltipText);
+      const labelHtml = marker.showLabel
+        ? `<span class="chart-reference-marker-label">${escapeHtml(marker.shortLabel)}</span>`
+        : '';
+
+      return `
+        <div class="chart-reference-marker${edgeClass}${kindClass}" style="left:${marker.pct}%">
+          <span class="chart-reference-marker-line"></span>
+          ${labelHtml}
+          <span class="chart-reference-marker-hit" tabindex="0" title="${tooltipAttr}" aria-label="${tooltipAttr}">
+            <span class="chart-reference-marker-tooltip">${tooltipHtml}</span>
+          </span>
+        </div>`;
+    })
+    .join("");
+
+  return `<div class="chart-reference-markers">${markersHtml}</div>`;
 }
 
 function resolveVisualSubBins(parentBinCount, opts = {}) {
@@ -209,13 +438,20 @@ export function renderHistogramHTML(arr, bins, title, opts = {}) {
           minNonZeroRatio: opts?.integerMinNonZeroRatio ?? 0.35,
           minReadableBins: opts?.integerMinReadableBins ?? 18,
         })
+      : binStrategy === 'step-discrete'
+        ? buildStepDiscreteBins(arr, {
+            stepSize: opts?.stepSize,
+            maxBins: opts?.integerMaxBins ?? 72,
+            minNonZeroRatio: opts?.integerMinNonZeroRatio ?? 0.35,
+            minReadableBins: opts?.integerMinReadableBins ?? 18,
+          })
       : buildContinuousBins(arr, {
           minBins: opts?.continuousMinBins ?? 48,
           maxBins: opts?.continuousMaxBins ?? 88,
           targetBins: bins,
           minNonZeroRatio: opts?.continuousMinNonZeroRatio ?? 0.42,
         });
-  const { counts, minEdge, maxEdge, binWidth, xTickMin, xTickMax, xIsInteger } = histogram;
+  const { counts, minEdge, maxEdge, binWidth, xTickMin, xTickMax, xIsInteger, stepDiscrete } = histogram;
   const visualSubBins = resolveVisualSubBins(counts.length, opts);
 
   const maxC = Math.max(...counts);
@@ -229,19 +465,54 @@ export function renderHistogramHTML(arr, bins, title, opts = {}) {
   // Target ~5 major ticks with "nice" spacing; this may yield 4–7 ticks
   // depending on data range for cleaner labels.
   const xTicks = buildTicks(xTickMin, xTickMax, opts?.xTargetTicks ?? 6, xIsInteger);
+  const xSpan = maxEdge - minEdge;
+  const referenceMarkersHtml = buildReferenceMarkersHtml(
+    opts?.referenceMarkers,
+    {
+      axisMin: Math.min(xTickMin, xTickMax),
+      axisMax: Math.max(xTickMin, xTickMax),
+      plotMin: minEdge,
+      plotMax: maxEdge,
+    },
+    opts
+  );
 
   const barsHtml = counts
     .map((c, i) => {
       const barH = yMax > 0 ? Math.max(0, (c / yMax) * 100) : 0;
       const labelLo = minEdge + i * binWidth;
       const labelHi = labelLo + binWidth;
-      const loText = formatBinEdge(labelLo, xIsInteger);
-      const hiText = formatBinEdge(labelHi, xIsInteger);
-      const isFinalBin = i === counts.length - 1;
-      const intervalText = isFinalBin
-        ? `[${loText}, ${hiText}]`
-        : `[${loText}, ${hiText})`;
-      const tooltip = `${title}\nBin: ${intervalText}\nCount: ${c.toLocaleString('en-US')}`;
+      let tooltip;
+      if (binStrategy === 'step-discrete' && stepDiscrete) {
+        const levelStart = stepDiscrete.minLevel + i * stepDiscrete.binWidthLevels;
+        const levelEnd = levelStart + stepDiscrete.binWidthLevels - 1;
+        const levelStartText = levelStart.toLocaleString('en-US');
+        const levelEndText = levelEnd.toLocaleString('en-US');
+        const ktLow = levelStart * stepDiscrete.stepSize;
+        const ktHigh = levelEnd * stepDiscrete.stepSize;
+        const valueIsInteger =
+          Number.isInteger(stepDiscrete.stepSize) &&
+          Number.isInteger(ktLow) &&
+          Number.isInteger(ktHigh);
+        const ktLowText = formatBinEdge(ktLow, valueIsInteger);
+        const ktHighText = formatBinEdge(ktHigh, valueIsInteger);
+        const stepText = formatBinEdge(stepDiscrete.stepSize, Number.isInteger(stepDiscrete.stepSize));
+        const levelsText =
+          levelStart === levelEnd ? `${levelStartText}` : `${levelStartText}-${levelEndText}`;
+        const deliveredText =
+          levelStart === levelEnd
+            ? `${ktLowText} kt`
+            : `${ktLowText}-${ktHighText} kt (in ${stepText}-kt steps)`;
+        tooltip = `${title}\nLevels: ${levelsText}\nDelivered: ${deliveredText}\nCount: ${c.toLocaleString('en-US')}`;
+      } else {
+        const loText = formatBinEdge(labelLo, xIsInteger);
+        const hiText = formatBinEdge(labelHi, xIsInteger);
+        const isFinalBin = i === counts.length - 1;
+        const intervalText = isFinalBin
+          ? `[${loText}, ${hiText}]`
+          : `[${loText}, ${hiText})`;
+        tooltip = `${title}\nBin: ${intervalText}\nCount: ${c.toLocaleString('en-US')}`;
+      }
       return `
         <div class="chart-parent-bin" title="${tooltip}" style="--bin-height:${barH}%">
           ${'<span class="chart-bin-segment"></span>'.repeat(visualSubBins)}
@@ -264,7 +535,6 @@ export function renderHistogramHTML(arr, bins, title, opts = {}) {
       return `<div class="chart-grid-line" style="bottom:${pct}%"></div>`;
     })
     .join("");
-  const xSpan = maxEdge - minEdge;
   const xTicksHtml = xTicks
     .map((tick) => {
       const pct = xSpan > 0 ? ((tick - minEdge) / xSpan) * 100 : 0;
@@ -294,6 +564,7 @@ export function renderHistogramHTML(arr, bins, title, opts = {}) {
           <div class="chart-bars">
             ${barsHtml}
           </div>
+          ${referenceMarkersHtml}
           <div class="chart-y-ticks">
             ${yTicksHtml}
           </div>

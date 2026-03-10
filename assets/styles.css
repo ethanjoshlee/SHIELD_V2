@@ -1022,6 +1022,113 @@ input[type="range"]::-moz-range-thumb {
   padding: 0;
 }
 
+.chart-reference-markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.chart-reference-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+}
+
+.chart-reference-marker--start {
+  transform: translateX(0);
+}
+
+.chart-reference-marker--end {
+  transform: translateX(-100%);
+}
+
+.chart-reference-marker-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed rgba(205, 138, 102, 0.52);
+}
+
+.chart-reference-marker--nuclear .chart-reference-marker-line {
+  border-left-color: rgba(212, 110, 92, 0.62);
+}
+
+.chart-reference-marker--conventional .chart-reference-marker-line {
+  border-left-color: rgba(183, 161, 122, 0.50);
+}
+
+.chart-reference-marker-label {
+  position: absolute;
+  top: 4px;
+  left: 3px;
+  max-width: 100px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: rgba(220, 196, 167, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.chart-reference-marker-hit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -7px;
+  width: 14px;
+  pointer-events: auto;
+  outline: none;
+}
+
+.chart-reference-marker-hit:focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(218, 188, 152, 0.55);
+}
+
+.chart-reference-marker-tooltip {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  min-width: 210px;
+  max-width: 320px;
+  padding: 8px 9px;
+  border: 1px solid rgba(182, 157, 129, 0.58);
+  border-radius: 3px;
+  background: rgba(21, 20, 19, 0.96);
+  color: rgba(236, 220, 200, 0.96);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 1.35;
+  white-space: pre-line;
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms ease;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.chart-reference-marker--start .chart-reference-marker-tooltip {
+  left: 0;
+  transform: none;
+}
+
+.chart-reference-marker--end .chart-reference-marker-tooltip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.chart-reference-marker:hover .chart-reference-marker-tooltip,
+.chart-reference-marker:focus-within .chart-reference-marker-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
 .chart-bar {
   flex: 1 1 0;
   min-width: 1px;

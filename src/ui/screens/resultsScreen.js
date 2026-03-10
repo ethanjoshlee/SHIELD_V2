@@ -12,8 +12,15 @@ import { createCountriesLayer, setHighlightedCountries } from '../globe/countrie
 import { createHudOverlay } from '../globe/hudOverlay.js';
 import { renderResultsContent } from '../results.js';
 import { renderHistogramHTML } from '../charts.js';
+import { DELIVERED_KILOTONS_BENCHMARKS } from '../deliveredKilotonsBenchmarks.js';
 
-function distributionChartOptions(distributionTitle) {
+function resolveDeliveredStepSize(params) {
+  const raw = Number(params?.kilotonsPerWarhead);
+  if (!Number.isFinite(raw) || raw <= 0) return 400;
+  return raw;
+}
+
+function distributionChartOptions(distributionTitle, runParams = {}) {
   const shared = {
     height: 250,
     showTitle: false,
@@ -24,14 +31,20 @@ function distributionChartOptions(distributionTitle) {
     maxVisualSubBins: 12,
   };
   if (distributionTitle === 'Delivered Kilotons') {
+    const stepSize = resolveDeliveredStepSize(runParams);
     return {
       ...shared,
       xLabel: 'Delivered Kilotons',
-      binStrategy: 'continuous',
-      bins: 96,
-      continuousMinBins: 44,
-      continuousMaxBins: 140,
-      continuousMinNonZeroRatio: 0.5,
+      binStrategy: 'step-discrete',
+      stepSize,
+      bins: 64,
+      integerMaxBins: 96,
+      integerMinNonZeroRatio: 0.35,
+      integerMinReadableBins: 18,
+      referenceMarkers: DELIVERED_KILOTONS_BENCHMARKS,
+      maxVisibleReferenceMarkers: 7,
+      maxVisibleReferenceLabels: 4,
+      referenceLabelMinGapPct: 10,
     };
   }
   if (distributionTitle === 'Penetrated Real Warheads') {
@@ -56,7 +69,7 @@ function distributionChartOptions(distributionTitle) {
   };
 }
 
-function initDistributionViewer(rootEl, runResult) {
+function initDistributionViewer(rootEl, runResult, runParams) {
   const viewer = rootEl.querySelector('[data-dist-viewer]');
   if (!viewer) return;
 
@@ -79,7 +92,7 @@ function initDistributionViewer(rootEl, runResult) {
     const active = distributions[activeIndex];
     titleEl.textContent = active.title;
     indexEl.textContent = `${activeIndex + 1} / ${distributions.length}`;
-    const chartOpts = distributionChartOptions(active.title);
+    const chartOpts = distributionChartOptions(active.title, runParams);
     stageEl.innerHTML = renderHistogramHTML(active.values, chartOpts.bins, active.title, chartOpts);
   };
 
@@ -139,7 +152,7 @@ export function renderResultsScreen(container, data, transitionFn) {
   setHighlightedCountries([blueKey, redKey]);
   startAnimation();
   setupInteraction(globeContainer);
-  initDistributionViewer(el, runResult);
+  initDistributionViewer(el, runResult, runParams);
 
   el.querySelector('.btn-reset').addEventListener('click', () => {
     transitionFn(STATES.WIZARD);

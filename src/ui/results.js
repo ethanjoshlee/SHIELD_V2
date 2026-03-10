@@ -5,8 +5,15 @@
 import { fmt } from '../utils/format.js';
 import { renderHistogramHTML } from './charts.js';
 import { buildBoostScenario } from '../model/scenarioLayer.js';
+import { DELIVERED_KILOTONS_BENCHMARKS } from './deliveredKilotonsBenchmarks.js';
 
-function distributionChartOptions(distributionTitle) {
+function resolveDeliveredStepSize(params) {
+  const raw = Number(params?.kilotonsPerWarhead);
+  if (!Number.isFinite(raw) || raw <= 0) return 400;
+  return raw;
+}
+
+function distributionChartOptions(distributionTitle, params = {}) {
   const shared = {
     height: 250,
     showTitle: false,
@@ -17,14 +24,20 @@ function distributionChartOptions(distributionTitle) {
     maxVisualSubBins: 12,
   };
   if (distributionTitle === 'Delivered Kilotons') {
+    const stepSize = resolveDeliveredStepSize(params);
     return {
       ...shared,
       xLabel: 'Delivered Kilotons',
-      binStrategy: 'continuous',
-      bins: 96,
-      continuousMinBins: 44,
-      continuousMaxBins: 140,
-      continuousMinNonZeroRatio: 0.5,
+      binStrategy: 'step-discrete',
+      stepSize,
+      bins: 64,
+      integerMaxBins: 96,
+      integerMinNonZeroRatio: 0.35,
+      integerMinReadableBins: 18,
+      referenceMarkers: DELIVERED_KILOTONS_BENCHMARKS,
+      maxVisibleReferenceMarkers: 7,
+      maxVisibleReferenceLabels: 4,
+      referenceLabelMinGapPct: 10,
     };
   }
   if (distributionTitle === 'Penetrated Real Warheads') {
@@ -240,7 +253,7 @@ export function renderResultsContent(params, result) {
         </div>
       </div>
 
-      <h3>Key Results (Real Warheads Only)</h3>
+      <h3>Key Outputs</h3>
       <div class="results-grid">
         <div class="result-item highlight">
           <span class="label">Mean Penetrated:</span>
@@ -309,7 +322,7 @@ export function renderResultsContent(params, result) {
   if (result.penReal && result.penReal.length > 0) {
     const deliveredKilotonsSeries = result.deliveredKilotons ?? result.ktDelivered ?? [];
     const defaultDistTitle = 'Delivered Kilotons';
-    const defaultDistChartOptions = distributionChartOptions(defaultDistTitle);
+    const defaultDistChartOptions = distributionChartOptions(defaultDistTitle, params);
     html += `
       <h3>Distributions</h3>
       <div class="results-distribution-viewer" data-dist-viewer>
