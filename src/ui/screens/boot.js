@@ -14,7 +14,7 @@ export function renderBoot(container) {
     <div class="boot-tag boot-tag-1">INITIALIZING ENGINE</div>
     <div class="boot-tag boot-tag-2">LOADING ARCHITECTURE</div>
     <div class="boot-tag boot-tag-3">CONFIGURING ENVIRONMENT</div>
-    <div class="boot-tag boot-tag-4">SIMULATION ONLINE</div>
+    <div class="boot-tag boot-tag-4">SYSTEM ONLINE</div>
   `;
   container.appendChild(el);
 
