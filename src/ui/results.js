@@ -5,6 +5,7 @@
 import { fmt } from '../utils/format.js';
 import { renderHistogramHTML } from './charts.js';
 import { buildBoostScenario } from '../model/scenarioLayer.js';
+import { MIDCOURSE_SPACE_AVAILABILITY } from '../model/simulationEngine.js';
 import { LAUNCH_REGION_PRESETS } from '../config/launchRegions.js';
 import { DELIVERED_KILOTONS_BENCHMARKS } from './deliveredKilotonsBenchmarks.js';
 
@@ -103,7 +104,18 @@ export function renderResultsContent(params, result) {
   const pkSpaceBoostKinetic = params.pkSpaceBoostKinetic ?? 0;
   const nSpaceBoostDirected = params.nSpaceBoostDirected ?? 0;
   const pkSpaceBoostDirected = params.pkSpaceBoostDirected ?? 0;
+  const nMidcourseSpaceKinetic = params.nMidcourseSpaceKinetic ?? params.interceptors?.midcourse_kinetic?.deployed ?? 0;
+  const pkMidcourseSpaceKinetic = params.pkMidcourseSpaceKinetic ?? params.interceptors?.midcourse_kinetic?.pk ?? 0;
+  const nMidcourseSpaceLaser = params.nMidcourseSpaceLaser ?? params.interceptors?.midcourse_laser?.deployed ?? 0;
+  const pkMidcourseSpaceLaser = params.pkMidcourseSpaceLaser ?? params.interceptors?.midcourse_laser?.pk ?? 0;
+  const nTerminalKinetic = params.nTerminalKinetic ?? params.interceptors?.terminal_kinetic?.deployed ?? 0;
+  const pkTerminalKinetic = params.pkTerminalKinetic ?? params.interceptors?.terminal_kinetic?.pk ?? 0;
+  const nTerminalNuclear = params.nTerminalNuclear ?? params.interceptors?.terminal_nuclear?.deployed ?? 0;
+  const pkTerminalNuclear = params.pkTerminalNuclear ?? params.interceptors?.terminal_nuclear?.pk ?? 0;
   const boostDirectedTargetsPerPlatform = params.boostDirectedTargetsPerPlatform ?? 2;
+  const midcourseDirectedTargetsPerPlatform = params.midcourseDirectedTargetsPerPlatform ?? 3;
+  const midcourseSpaceAvailabilityMultiplier =
+    params.midcourseSpaceAvailabilityMultiplier ?? MIDCOURSE_SPACE_AVAILABILITY;
   const launchRegion = params.launchRegion ?? 'default';
   const boostScenario = buildBoostScenario(params);
   const asatEffects = boostScenario.asatEffects ?? {};
@@ -114,6 +126,12 @@ export function renderResultsContent(params, result) {
   const pAsatNuclearEffect = params.pAsatNuclearEffect ?? asatEffects.pAsatNuclearEffect ?? 0;
   const availabilityMultiplier = asatEffects.availabilityMultiplier ?? boostScenario.availabilityMultiplier ?? 1;
   const detectionMultiplier = asatEffects.detectionMultiplier ?? boostScenario.detectionMultiplier ?? 1;
+  const deployedMidcourseSpaceInterceptors =
+    result.deployedMidcourseSpaceInterceptors ?? (nMidcourseSpaceKinetic + nMidcourseSpaceLaser);
+  const effectiveMidcourseSpaceInterceptorsAvailable =
+    result.effectiveMidcourseSpaceInterceptorsAvailable ?? 0;
+  const asatDetectPenalty = params.asatDetectPenalty ?? params.countermeasures?.asatDetectPenalty ?? 0;
+  const asatSpacePkPenalty = params.asatSpacePkPenalty ?? params.countermeasures?.asatSpacePkPenalty ?? 0;
   const boostEvasionPenalty = params.boostEvasionPenalty ?? 0;
   const meanDeliveredKilotons = s.meanDeliveredKilotons ?? s.meanKtDelivered ?? 0;
   const p10DeliveredKilotons = s.p10DeliveredKilotons ?? s.p10KtDelivered ?? 0;
@@ -149,7 +167,7 @@ export function renderResultsContent(params, result) {
           <span class="value">${totalObjects}</span>
         </div>
         <div class="result-item">
-          <span class="label">Baseline missile and object detection/tracking probability:</span>
+          <span class="label">Blue network baseline missile/object detection and tracking probability:</span>
           <span class="value">${fmt(params.pDetectTrack, 2)}</span>
         </div>
         <div class="result-item">
@@ -165,32 +183,32 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(1 - params.pkDegradeFactor, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Warhead classification accuracy:</span>
+          <span class="label">Blue network warhead discrimination accuracy (warhead classified as warhead):</span>
           <span class="value">${fmt(params.pClassifyWarhead, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Decoy misclassification rate:</span>
+          <span class="label">Blue network discrimination false-alarm rate (decoy misclassified as warhead):</span>
           <span class="value">${fmt(params.pFalseAlarmDecoy, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Discrimination note:</span>
+          <span class="value">These sensing/discrimination assumptions are modeled as global Blue network inputs upstream of engagement. Midcourse outcomes are especially sensitive to warhead/decoy discrimination quality.</span>
         </div>
         <div class="result-item">
           <span class="label">Ground-based kinetic midcourse doctrine:</span>
           <span class="value">${midcourseDoctrineLine}</span>
         </div>
         <div class="result-item">
-          <span class="label">Hypothetical space-based kinetic boost doctrine:</span>
+          <span class="label">Hypothetical space-based kinetic boost engagement doctrine:</span>
           <span class="value">${boostKineticDoctrineLine}</span>
         </div>
         <div class="result-item">
-          <span class="label">Ground-based interceptors in engagement range:</span>
+          <span class="label">Ground-based midcourse interceptors in engagement range (existing U.S. architecture):</span>
           <span class="value">${params.nInventory}</span>
         </div>
         <div class="result-item">
-          <span class="label">Ground-based interceptor kill probability vs warheads:</span>
+          <span class="label">Ground-based midcourse interceptor kill probability:</span>
           <span class="value">${fmt(params.pkWarhead, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Ground-based interceptor kill probability vs decoys:</span>
-          <span class="value">${fmt(params.pkDecoy, 2)}</span>
         </div>
         <div class="result-item">
           <span class="label">Hypothetical space-based kinetic boost interceptors in orbit:</span>
@@ -201,7 +219,7 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(pkSpaceBoostKinetic, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Hypothetical space-based directed-energy boost interceptors in orbit:</span>
+          <span class="label">Hypothetical space-based directed-energy interceptor platforms in orbit:</span>
           <span class="value">${nSpaceBoostDirected}</span>
         </div>
         <div class="result-item">
@@ -209,8 +227,48 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(pkSpaceBoostDirected, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Directed-energy boost engagement opportunities per platform:</span>
+          <span class="label">Hypothetical space-based kinetic midcourse interceptors in orbit:</span>
+          <span class="value">${nMidcourseSpaceKinetic}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based kinetic midcourse interceptor kill probability:</span>
+          <span class="value">${fmt(pkMidcourseSpaceKinetic, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based directed-energy midcourse interceptor platforms in orbit:</span>
+          <span class="value">${nMidcourseSpaceLaser}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based directed-energy midcourse interceptor kill probability:</span>
+          <span class="value">${fmt(pkMidcourseSpaceLaser, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical ground-based terminal kinetic interceptors in engagement range:</span>
+          <span class="value">${nTerminalKinetic}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical ground-based terminal kinetic interceptor kill probability:</span>
+          <span class="value">${fmt(pkTerminalKinetic, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical ground-based terminal nuclear interceptors in engagement range:</span>
+          <span class="value">${nTerminalNuclear}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical ground-based terminal nuclear interceptor kill probability:</span>
+          <span class="value">${fmt(pkTerminalNuclear, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Boost-phase directed-energy engagement opportunities per hypothetical orbital platform (aggregated capacity assumption):</span>
           <span class="value">${boostDirectedTargetsPerPlatform}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Boost DE capacity note:</span>
+          <span class="value">Boost directed-energy opportunities per platform are modeled as a reduced-form capacity assumption, not an explicit timeline simulation of boost-window timing, dwell, slew/retarget, or handoff dynamics.</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Directed-energy midcourse engagement opportunities per hypothetical orbital platform:</span>
+          <span class="value">${midcourseDirectedTargetsPerPlatform}</span>
         </div>
         <div class="result-item">
           <span class="label">Launch region preset:</span>
@@ -241,8 +299,32 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(availabilityMultiplier, 2)}</span>
         </div>
         <div class="result-item">
+          <span class="label">Midcourse space interceptor availability multiplier:</span>
+          <span class="value">${fmt(midcourseSpaceAvailabilityMultiplier, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Deployed midcourse space interceptors:</span>
+          <span class="value">${deployedMidcourseSpaceInterceptors}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Effective midcourse space interceptors available:</span>
+          <span class="value">${effectiveMidcourseSpaceInterceptorsAvailable}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Space-layer availability note:</span>
+          <span class="value">Space interceptor availability accounts for orbital geometry limits. Only a fraction of deployed satellites can engage a given trajectory during the midcourse phase.</span>
+        </div>
+        <div class="result-item">
           <span class="label">Boost-phase detection/tracking multiplier:</span>
           <span class="value">${fmt(detectionMultiplier, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">ASAT detection penalty:</span>
+          <span class="value">${fmt(asatDetectPenalty, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">ASAT space-interceptor kill-probability penalty:</span>
+          <span class="value">${fmt(asatSpacePkPenalty, 2)}</span>
         </div>
         <div class="result-item">
           <span class="label">Boost-phase survivability and evasion:</span>
@@ -297,7 +379,7 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(s.meanBoostWarheadsDestroyed, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Post-separation: Warheads Killed</span>
+          <span class="label">Midcourse: Warheads Killed</span>
           <span class="value">${fmt(s.meanMidcourseWarheadsKilled, 2)}</span>
         </div>
         <div class="result-item">

@@ -58,6 +58,22 @@ function resolveBluePresetParamValue(bluePreset, param) {
       return bluePreset.interceptors?.boost_laser?.deployed;
     case 'pkSpaceBoostDirected':
       return bluePreset.interceptors?.boost_laser?.pk;
+    case 'nMidcourseSpaceKinetic':
+      return bluePreset.interceptors?.midcourse_kinetic?.deployed;
+    case 'pkMidcourseSpaceKinetic':
+      return bluePreset.interceptors?.midcourse_kinetic?.pk;
+    case 'nMidcourseSpaceLaser':
+      return bluePreset.interceptors?.midcourse_laser?.deployed;
+    case 'pkMidcourseSpaceLaser':
+      return bluePreset.interceptors?.midcourse_laser?.pk;
+    case 'nTerminalKinetic':
+      return bluePreset.interceptors?.terminal_kinetic?.deployed;
+    case 'pkTerminalKinetic':
+      return bluePreset.interceptors?.terminal_kinetic?.pk;
+    case 'nTerminalNuclear':
+      return bluePreset.interceptors?.terminal_nuclear?.deployed;
+    case 'pkTerminalNuclear':
+      return bluePreset.interceptors?.terminal_nuclear?.pk;
     case 'midcourseKineticDoctrineMode':
       return bluePreset.doctrineMode;
     case 'midcourseKineticShotsPerTarget':
@@ -132,6 +148,10 @@ function resolveRedPresetParamValue(redPreset, param, redSummary) {
       return redSummary?.kilotonsPerWarhead;
     case 'boostEvasionPenalty':
       return redSummary?.boostEvasionPenalty;
+    case 'asatDetectPenalty':
+      return redPreset.countermeasures?.asatDetectPenalty;
+    case 'asatSpacePkPenalty':
+      return redPreset.countermeasures?.asatSpacePkPenalty;
     default:
       return undefined;
   }

@@ -81,6 +81,5 @@ export function engageWithType(tgt, pk, doctrineParams, inventory) {
  * Kept for backward compatibility.
  */
 export function engageTarget(tgt, params, inventory) {
-  const pk = tgt.kind === "warhead" ? params.pkWarhead : params.pkDecoy;
-  return engageWithType(tgt, pk, params, inventory);
+  return engageWithType(tgt, params.pkWarhead, params, inventory);
 }

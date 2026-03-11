@@ -43,6 +43,13 @@ function applyTrialDegradation(params) {
 }
 
 const BOOST_TYPES = ["boost_kinetic", "boost_laser"];
+// Midcourse space-based interceptors have broader engagement geometry
+// and longer engagement windows than boost-phase interceptors, but
+// orbital mechanics still constrain which satellites can reach a
+// given intercept opportunity. This multiplier approximates the
+// fraction of deployed midcourse space interceptors that are
+// effectively available for engagement.
+export const MIDCOURSE_SPACE_AVAILABILITY = 0.30;
 
 function kilotonsPerWarheadFrom(params) {
   const raw = Number(params.kilotonsPerWarhead);
@@ -80,6 +87,17 @@ function kineticDoctrineParamsFrom(params, familyPrefix) {
 function directedTargetsPerPlatformFrom(params) {
   const raw = Math.floor(Number(params.boostDirectedTargetsPerPlatform) || 2);
   return Math.min(9, Math.max(1, raw));
+}
+
+function midcourseDirectedTargetsPerPlatformFrom(params) {
+  const raw = Math.floor(Number(params.midcourseDirectedTargetsPerPlatform) || 3);
+  return Math.min(8, Math.max(1, raw));
+}
+
+function midcourseSpaceAvailabilityMultiplierFrom(params) {
+  const raw = Number(params.midcourseSpaceAvailabilityMultiplier);
+  if (!Number.isFinite(raw)) return MIDCOURSE_SPACE_AVAILABILITY;
+  return Math.max(0.15, Math.min(0.45, raw));
 }
 
 function isBoostDirectedType(type) {
@@ -190,7 +208,28 @@ function runLegacyTrial(params) {
   const midcourseKineticDoctrine = kineticDoctrineParamsFrom(params, 'midcourseKinetic');
   const boostKineticDoctrine = kineticDoctrineParamsFrom(params, 'boostKinetic');
   const boostDirectedTargetsPerPlatform = directedTargetsPerPlatformFrom(params);
+  const midcourseSpaceAvailabilityMultiplier = midcourseSpaceAvailabilityMultiplierFrom(params);
   const kilotonsPerWarhead = kilotonsPerWarheadFrom(params);
+  const deployedMidcourseSpaceInterceptors =
+    (params.nMidcourseSpaceKinetic ?? params.interceptors?.midcourse_kinetic?.deployed ?? 0) +
+    (params.nMidcourseSpaceLaser ?? params.interceptors?.midcourse_laser?.deployed ?? 0);
+  const effectiveMidcourseSpaceInterceptorsAvailable =
+    Math.max(
+      0,
+      Math.floor(
+        (params.nMidcourseSpaceKinetic ?? params.interceptors?.midcourse_kinetic?.deployed ?? 0) *
+          midcourseSpaceAvailabilityMultiplier *
+          (boostScenario.availabilityMultiplier ?? 1)
+      )
+    ) +
+    Math.max(
+      0,
+      Math.floor(
+        (params.nMidcourseSpaceLaser ?? params.interceptors?.midcourse_laser?.deployed ?? 0) *
+          midcourseSpaceAvailabilityMultiplier *
+          (boostScenario.availabilityMultiplier ?? 1)
+      )
+    );
 
   // Neutral compatibility path: preserve existing legacy behavior.
   if (!boostEnabled) {
@@ -198,8 +237,7 @@ function runLegacyTrial(params) {
     const d = applyTrialDegradation(params);
 
     const pDetectTrack = d.pDetectTrack_trial;
-    const pkWarhead = clamp01(params.pkWarhead * d.pkDegradeFactor);
-    const pkDecoy = clamp01(params.pkDecoy * d.pkDegradeFactor);
+    const pkUnified = clamp01(params.pkWarhead * d.pkDegradeFactor);
 
     let inventory = params.nInventory;
 
@@ -238,8 +276,7 @@ function runLegacyTrial(params) {
         continue;
       }
 
-      const pk = tgt.kind === 'warhead' ? pkWarhead : pkDecoy;
-      const res = engageWithType(tgt, pk, midcourseKineticDoctrine, inventory);
+      const res = engageWithType(tgt, pkUnified, midcourseKineticDoctrine, inventory);
       inventory = res.inventoryRemaining;
 
       shotsTotal += res.shotsFired;
@@ -279,6 +316,8 @@ function runLegacyTrial(params) {
       deliveredKilotons,
       ktDelivered: deliveredKilotons,
       architectureCost_M: 0,
+      deployedMidcourseSpaceInterceptors,
+      effectiveMidcourseSpaceInterceptorsAvailable,
     };
   }
 
@@ -288,8 +327,7 @@ function runLegacyTrial(params) {
   const pDetectTrackBoost = clamp01(
     pDetectTrack * (boostScenario.detectionMultiplier ?? 1)
   );
-  const pkWarhead = clamp01(params.pkWarhead * d.pkDegradeFactor);
-  const pkDecoy = clamp01(params.pkDecoy * d.pkDegradeFactor);
+  const pkUnified = clamp01(params.pkWarhead * d.pkDegradeFactor);
 
   // Continuous scenario values become discrete pools only at engagement resolution.
   const boostInventoryDiscrete = discretizeBoostInventoryByType(
@@ -366,8 +404,7 @@ function runLegacyTrial(params) {
       continue;
     }
 
-    const pk = tgt.kind === 'warhead' ? pkWarhead : pkDecoy;
-    const res = engageWithType(tgt, pk, midcourseKineticDoctrine, inventory);
+    const res = engageWithType(tgt, pkUnified, midcourseKineticDoctrine, inventory);
     inventory = res.inventoryRemaining;
 
     shotsTotal += res.shotsFired;
@@ -406,6 +443,8 @@ function runLegacyTrial(params) {
     deliveredKilotons,
     ktDelivered: deliveredKilotons,
     architectureCost_M: 0,
+    deployedMidcourseSpaceInterceptors,
+    effectiveMidcourseSpaceInterceptorsAvailable,
   };
 }
 
@@ -425,12 +464,17 @@ function runMultiPhaseTrial(params) {
   const pDetectTrackBoost = clamp01(
     pDetectTrack * (boostScenario.detectionMultiplier ?? 1)
   );
+  const boostDirectedTargetsPerPlatform = directedTargetsPerPlatformFrom(params);
+  const midcourseDirectedTargetsPerPlatform = midcourseDirectedTargetsPerPlatformFrom(params);
+  const midcourseSpaceAvailabilityMultiplier = midcourseSpaceAvailabilityMultiplierFrom(params);
 
   // --- Build per-type inventory and effective Pk ---
   const inventory = {};
   const effectivePk = {};
   const interceptorConfigs = params.interceptors;
   const boostInventoryContinuous = {};
+  let deployedMidcourseSpaceInterceptors = 0;
+  let effectiveMidcourseSpaceInterceptorsAvailable = 0;
 
   for (const [type, cfg] of Object.entries(interceptorConfigs)) {
     // Keep boost inventory continuous in scenario-layer values until resolution.
@@ -438,6 +482,23 @@ function runMultiPhaseTrial(params) {
       const scenarioAvail = boostScenario.effectiveBoostInterceptorsPostAsatByType[type];
       boostInventoryContinuous[type] = scenarioAvail != null ? scenarioAvail : cfg.deployed;
       inventory[type] = 0;
+    } else if (cfg.phase === "midcourse" && isSpaceBased(type)) {
+      const deployed = Math.max(0, Number(cfg.deployed) || 0);
+      deployedMidcourseSpaceInterceptors += deployed;
+      const effectiveMidcourseInventory =
+        deployed *
+        midcourseSpaceAvailabilityMultiplier *
+        (boostScenario.availabilityMultiplier ?? 1);
+      // Convert fractional availability to a deterministic platform count before
+      // any directed-energy opportunity expansion.
+      const effectiveMidcoursePlatforms = Math.max(0, Math.floor(effectiveMidcourseInventory));
+      effectiveMidcourseSpaceInterceptorsAvailable += effectiveMidcoursePlatforms;
+      if (type === "midcourse_laser") {
+        inventory[type] =
+          effectiveMidcoursePlatforms * midcourseDirectedTargetsPerPlatform;
+      } else {
+        inventory[type] = effectiveMidcoursePlatforms;
+      }
     } else {
       inventory[type] = cfg.deployed;
     }
@@ -456,7 +517,6 @@ function runMultiPhaseTrial(params) {
   const midcourseKineticDoctrine = kineticDoctrineParamsFrom(params, 'midcourseKinetic');
   const boostKineticDoctrine = kineticDoctrineParamsFrom(params, 'boostKinetic');
   const terminalDoctrine = midcourseKineticDoctrine;
-  const boostDirectedTargetsPerPlatform = directedTargetsPerPlatformFrom(params);
   const kilotonsPerWarhead = kilotonsPerWarheadFrom(params);
 
   // Stats
@@ -611,16 +671,31 @@ function runMultiPhaseTrial(params) {
     for (const type of midcourseTypes) {
       if (inventory[type] <= 0) continue;
 
-      const res = engageWithType(tgt, effectivePk[type], midcourseKineticDoctrine, inventory[type]);
-      inventory[type] = res.inventoryRemaining;
-      shotsTotal += res.shotsFired;
+      if (type === "midcourse_laser") {
+        // Midcourse directed-energy layers are modeled as opportunity budgets,
+        // mirroring boost directed-energy accounting (one opportunity consumed
+        // per engagement attempt).
+        inventory[type] -= 1;
+        shotsTotal += 1;
+        if (tgt.kind === "warhead") shotsAtTrueWarheads += 1;
+        else shotsAtDecoys += 1;
 
-      if (tgt.kind === "warhead") shotsAtTrueWarheads += res.shotsFired;
-      else shotsAtDecoys += res.shotsFired;
+        if (bernoulli(effectivePk[type])) {
+          killed = true;
+          break;
+        }
+      } else {
+        const res = engageWithType(tgt, effectivePk[type], midcourseKineticDoctrine, inventory[type]);
+        inventory[type] = res.inventoryRemaining;
+        shotsTotal += res.shotsFired;
 
-      if (res.killed) {
-        killed = true;
-        break;
+        if (tgt.kind === "warhead") shotsAtTrueWarheads += res.shotsFired;
+        else shotsAtDecoys += res.shotsFired;
+
+        if (res.killed) {
+          killed = true;
+          break;
+        }
       }
     }
 
@@ -714,6 +789,8 @@ function runMultiPhaseTrial(params) {
     deliveredKilotons,
     ktDelivered: deliveredKilotons,
     architectureCost_M: 0, // computed in metrics, not per-trial
+    deployedMidcourseSpaceInterceptors,
+    effectiveMidcourseSpaceInterceptorsAvailable,
   };
 }
 

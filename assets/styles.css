@@ -1684,6 +1684,15 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 500;
 }
 
+.wizard-subphase-title {
+  margin: 2px 0 6px 0;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+}
+
 .wizard-param-group label {
   display: flex;
   flex-direction: column;
@@ -1843,6 +1852,15 @@ input[type="range"]::-moz-range-thumb {
   letter-spacing: 0.06em;
   color: var(--text-secondary);
   text-transform: uppercase;
+}
+
+.wizard-slider-note {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.35;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
 }
 
 .wizard-slider-value {

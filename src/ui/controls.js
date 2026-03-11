@@ -119,7 +119,8 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
   );
 
   const pkWarhead = clamp01(parseFloat(getValue("pkWarhead", "pkWarhead", 0.6)) || 0);
-  const pkDecoy = clamp01(parseFloat(getValue("pkDecoy", "pkDecoy", 0.8)) || 0);
+  // Unified per-interceptor Pk (classification handles warhead vs decoy shot allocation).
+  const pkDecoy = pkWarhead;
 
   const nInventory = Math.max(0, parseInt(getValue("nInventory", "nInventory", 0), 10) || 0);
 
@@ -163,6 +164,86 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
       )
     ) || 0
   );
+  const nMidcourseSpaceKinetic = Math.max(
+    0,
+    parseInt(
+      getValue(
+        "nMidcourseSpaceKinetic",
+        "nMidcourseSpaceKinetic",
+        bluePreset?.interceptors?.midcourse_kinetic?.deployed ?? 0
+      ),
+      10
+    ) || 0
+  );
+  const pkMidcourseSpaceKinetic = clamp01(
+    parseFloat(
+      getValue(
+        "pkMidcourseSpaceKinetic",
+        "pkMidcourseSpaceKinetic",
+        bluePreset?.interceptors?.midcourse_kinetic?.pk ?? 0.5
+      )
+    ) || 0
+  );
+  const nMidcourseSpaceLaser = Math.max(
+    0,
+    parseInt(
+      getValue(
+        "nMidcourseSpaceLaser",
+        "nMidcourseSpaceLaser",
+        bluePreset?.interceptors?.midcourse_laser?.deployed ?? 0
+      ),
+      10
+    ) || 0
+  );
+  const pkMidcourseSpaceLaser = clamp01(
+    parseFloat(
+      getValue(
+        "pkMidcourseSpaceLaser",
+        "pkMidcourseSpaceLaser",
+        bluePreset?.interceptors?.midcourse_laser?.pk ?? 0.4
+      )
+    ) || 0
+  );
+  const nTerminalKinetic = Math.max(
+    0,
+    parseInt(
+      getValue(
+        "nTerminalKinetic",
+        "nTerminalKinetic",
+        bluePreset?.interceptors?.terminal_kinetic?.deployed ?? 0
+      ),
+      10
+    ) || 0
+  );
+  const pkTerminalKinetic = clamp01(
+    parseFloat(
+      getValue(
+        "pkTerminalKinetic",
+        "pkTerminalKinetic",
+        bluePreset?.interceptors?.terminal_kinetic?.pk ?? 0.8
+      )
+    ) || 0
+  );
+  const nTerminalNuclear = Math.max(
+    0,
+    parseInt(
+      getValue(
+        "nTerminalNuclear",
+        "nTerminalNuclear",
+        bluePreset?.interceptors?.terminal_nuclear?.deployed ?? 0
+      ),
+      10
+    ) || 0
+  );
+  const pkTerminalNuclear = clamp01(
+    parseFloat(
+      getValue(
+        "pkTerminalNuclear",
+        "pkTerminalNuclear",
+        bluePreset?.interceptors?.terminal_nuclear?.pk ?? 0.95
+      )
+    ) || 0
+  );
   const boostDirectedTargetsPerPlatform = Math.min(
     9,
     Math.max(
@@ -175,6 +256,33 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
         ),
         10
       ) || 2
+    )
+  );
+  const midcourseDirectedTargetsPerPlatform = Math.min(
+    8,
+    Math.max(
+      1,
+      parseInt(
+        getValue(
+          "midcourseDirectedTargetsPerPlatform",
+          "midcourseDirectedTargetsPerPlatform",
+          3
+        ),
+        10
+      ) || 3
+    )
+  );
+  const midcourseSpaceAvailabilityMultiplier = Math.min(
+    0.45,
+    Math.max(
+      0.15,
+      parseFloat(
+        getValue(
+          "midcourseSpaceAvailabilityMultiplier",
+          "midcourseSpaceAvailabilityMultiplier",
+          0.30
+        )
+      ) || 0.30
     )
   );
 
@@ -232,6 +340,24 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
       )
     ) || 0
   );
+  const asatDetectPenalty = clamp01(
+    parseFloat(
+      getValue(
+        "asatDetectPenalty",
+        "asatDetectPenalty",
+        redPreset?.countermeasures?.asatDetectPenalty ?? 0
+      )
+    ) || 0
+  );
+  const asatSpacePkPenalty = clamp01(
+    parseFloat(
+      getValue(
+        "asatSpacePkPenalty",
+        "asatSpacePkPenalty",
+        redPreset?.countermeasures?.asatSpacePkPenalty ?? 0
+      )
+    ) || 0
+  );
   const boostEvasionPenalty = clamp01(
     parseFloat(
       getValue(
@@ -253,9 +379,8 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
 
   // --- Construct multi-phase structured params from flat UI values + presets ---
 
-  // Interceptors: UI-controlled types use slider values; preset-only types use
-  // blue preset data (or zero if no preset). This activates the multi-phase
-  // engine while keeping all existing slider behavior intact.
+  // Interceptors: all active layers are sourced from editable UI values.
+  // Presets only provide initial defaults loaded into those controls.
   const presetInterceptors = bluePreset?.interceptors ?? {};
   const interceptors = {
     boost_kinetic: {
@@ -277,26 +402,26 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
       phase: "midcourse",
     },
     midcourse_kinetic: {
-      deployed: presetInterceptors.midcourse_kinetic?.deployed ?? 0,
-      pk: presetInterceptors.midcourse_kinetic?.pk ?? 0.50,
+      deployed: nMidcourseSpaceKinetic,
+      pk: pkMidcourseSpaceKinetic,
       costPerUnit_M: presetInterceptors.midcourse_kinetic?.costPerUnit_M ?? 15,
       phase: "midcourse",
     },
     midcourse_laser: {
-      deployed: presetInterceptors.midcourse_laser?.deployed ?? 0,
-      pk: presetInterceptors.midcourse_laser?.pk ?? 0.40,
+      deployed: nMidcourseSpaceLaser,
+      pk: pkMidcourseSpaceLaser,
       costPerUnit_M: presetInterceptors.midcourse_laser?.costPerUnit_M ?? 25,
       phase: "midcourse",
     },
     terminal_kinetic: {
-      deployed: presetInterceptors.terminal_kinetic?.deployed ?? 0,
-      pk: presetInterceptors.terminal_kinetic?.pk ?? 0.80,
+      deployed: nTerminalKinetic,
+      pk: pkTerminalKinetic,
       costPerUnit_M: presetInterceptors.terminal_kinetic?.costPerUnit_M ?? 3,
       phase: "terminal",
     },
     terminal_nuclear: {
-      deployed: presetInterceptors.terminal_nuclear?.deployed ?? 0,
-      pk: presetInterceptors.terminal_nuclear?.pk ?? 0.95,
+      deployed: nTerminalNuclear,
+      pk: pkTerminalNuclear,
       costPerUnit_M: presetInterceptors.terminal_nuclear?.costPerUnit_M ?? 50,
       phase: "terminal",
     },
@@ -311,16 +436,18 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
       mirvsPerMissile,
       decoysPerWarhead,
       yieldKt: kilotonsPerWarhead,
-      boostEvasion: boostEvasionPenalty,
+      // Slider-controlled boost evasion is modeled at scenario level.
+      // Keep missile-level synthetic value neutral to avoid double-application.
+      boostEvasion: 0,
     },
   };
 
-  // Countermeasures: pass from red preset if available (affects non-boost
-  // space-based interceptor detection and Pk in multi-phase engine).
-  const countermeasures = redPreset?.countermeasures ?? {
-    asatType: "none",
-    asatDetectPenalty: 0,
-    asatSpacePkPenalty: 0,
+  // Countermeasures: sourced from editable UI values, with preset type retained
+  // as metadata only.
+  const countermeasures = {
+    asatType: redPreset?.countermeasures?.asatType ?? "none",
+    asatDetectPenalty,
+    asatSpacePkPenalty,
   };
 
   return {
@@ -350,13 +477,25 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     pkSpaceBoostKinetic,
     nSpaceBoostDirected,
     pkSpaceBoostDirected,
+    nMidcourseSpaceKinetic,
+    pkMidcourseSpaceKinetic,
+    nMidcourseSpaceLaser,
+    pkMidcourseSpaceLaser,
+    nTerminalKinetic,
+    pkTerminalKinetic,
+    nTerminalNuclear,
+    pkTerminalNuclear,
     boostDirectedTargetsPerPlatform,
+    midcourseDirectedTargetsPerPlatform,
+    midcourseSpaceAvailabilityMultiplier,
     launchRegion,
     pAsatCyberEffect,
     nAsatHitToKill,
     pAsatHitToKill,
     nAsatNuclear,
     pAsatNuclearEffect,
+    asatDetectPenalty,
+    asatSpacePkPenalty,
     boostEvasionPenalty,
     nTrials,
     pSystemUp,
@@ -406,15 +545,15 @@ function sliderValueInputHTML(label, value, min, max, step, unit = '') {
   `;
 }
 
-function probSlider(label, param, pct, defaultPct, minPct = 0.1) {
+function probSlider(label, param, pct, defaultPct, minPct = 0.1, maxPct = 99.9) {
   const v = defaultPct ?? pct;
   return `
     <div class="wizard-slider-row">
       <div class="wizard-slider-header">
         <span class="wizard-slider-label">${label}</span>
-        ${sliderValueInputHTML(label, v, minPct, 99.9, 0.1, '%')}
+        ${sliderValueInputHTML(label, v, minPct, maxPct, 0.1, '%')}
       </div>
-      <input type="range" class="wizard-slider" min="${minPct}" max="99.9" step="0.1" value="${v}" data-prob-target="${param}" />
+      <input type="range" class="wizard-slider" min="${minPct}" max="${maxPct}" step="0.1" value="${v}" data-prob-target="${param}" />
       <input type="number" class="wizard-hidden-param" data-param="${param}" value="${(v / 100).toFixed(4)}" tabindex="-1" aria-hidden="true" />
     </div>`;
 }
@@ -461,12 +600,21 @@ export function blueParamsHTML(d) {
   const pcw  = (d.pClassifyWarhead * 100).toFixed(1);
   const pfa  = (d.pFalseAlarmDecoy * 100).toFixed(1);
   const pkw  = (d.pkWarhead * 100).toFixed(1);
-  const pkd  = (d.pkDecoy * 100).toFixed(1);
   const preMid  = (midcoursePReengage * 100).toFixed(1);
   const preBoostKinetic = (boostKineticPReengage * 100).toFixed(1);
   const pkbK = ((d.pkSpaceBoostKinetic ?? 0.5) * 100).toFixed(1);
   const pkbD = ((d.pkSpaceBoostDirected ?? 0.4) * 100).toFixed(1);
+  const nMidcourseSpaceKinetic = d.nMidcourseSpaceKinetic ?? d.interceptors?.midcourse_kinetic?.deployed ?? 0;
+  const pkMidcourseSpaceKinetic = ((d.pkMidcourseSpaceKinetic ?? d.interceptors?.midcourse_kinetic?.pk ?? 0.5) * 100).toFixed(1);
+  const nMidcourseSpaceLaser = d.nMidcourseSpaceLaser ?? d.interceptors?.midcourse_laser?.deployed ?? 0;
+  const pkMidcourseSpaceLaser = ((d.pkMidcourseSpaceLaser ?? d.interceptors?.midcourse_laser?.pk ?? 0.4) * 100).toFixed(1);
+  const nTerminalKinetic = d.nTerminalKinetic ?? d.interceptors?.terminal_kinetic?.deployed ?? 0;
+  const pkTerminalKinetic = ((d.pkTerminalKinetic ?? d.interceptors?.terminal_kinetic?.pk ?? 0.8) * 100).toFixed(1);
+  const nTerminalNuclear = d.nTerminalNuclear ?? d.interceptors?.terminal_nuclear?.deployed ?? 0;
+  const pkTerminalNuclear = ((d.pkTerminalNuclear ?? d.interceptors?.terminal_nuclear?.pk ?? 0.95) * 100).toFixed(1);
   const boostDirectedTargetsPerPlatform = d.boostDirectedTargetsPerPlatform ?? 2;
+  const midcourseDirectedTargetsPerPlatform = d.midcourseDirectedTargetsPerPlatform ?? 3;
+  const midcourseSpaceAvailabilityPct = ((d.midcourseSpaceAvailabilityMultiplier ?? 0.30) * 100).toFixed(1);
   const pSystemUpPct = ((d.pSystemUp ?? 0.9) * 100).toFixed(1);
   const detectDegradeFactor = d.detectDegradeFactor ?? 0.5;
   const pkDegradeFactor = d.pkDegradeFactor ?? 0.7;
@@ -500,27 +648,56 @@ export function blueParamsHTML(d) {
   `;
   return `
     <div class="wizard-param-group">
+      <h5>Blue sensing, tracking, and discrimination assumptions</h5>
       <div class="wizard-param-pair">
-        ${probSlider('Baseline missile and object detection/tracking probability', 'pDetectTrack', pdt)}
-        ${probSlider('Warhead classification accuracy', 'pClassifyWarhead', pcw)}
+        ${probSlider('Blue network baseline missile/object detection and tracking probability', 'pDetectTrack', pdt)}
+        ${probSlider('Blue network warhead discrimination accuracy (warhead classified as warhead)', 'pClassifyWarhead', pcw)}
       </div>
-      <div class="wizard-param-pair">
-        ${probSlider('Decoy misclassification rate', 'pFalseAlarmDecoy', pfa)}
-        ${intSlider('Ground-based interceptors in engagement range', 'nInventory', 0, 2000, 1, d.nInventory)}
+      ${probSlider('Blue network discrimination false-alarm rate (decoy misclassified as warhead)', 'pFalseAlarmDecoy', pfa)}
+      <div class="wizard-slider-note">
+        These global Blue sensing/tracking/discrimination assumptions are upstream of interceptor engagement. Midcourse outcomes are especially sensitive to warhead/decoy discrimination quality.
       </div>
-      <div class="wizard-param-pair">
-        ${probSlider('Ground-based interceptor per shot kill probability for warheads', 'pkWarhead', pkw)}
-        ${probSlider('Ground-based interceptor per shot kill probability for decoys', 'pkDecoy', pkd)}
-      </div>
+      <h5>Ground-based midcourse layer (existing U.S. architecture)</h5>
+      ${intSlider('Existing ground-based midcourse interceptors in engagement range', 'nInventory', 0, 2000, 1, d.nInventory)}
+      ${probSlider('Ground-based midcourse interceptor kill probability', 'pkWarhead', pkw)}
+      <h5>Hypothetical space-based interceptor layers</h5>
+      <div class="wizard-subphase-title">Boost phase</div>
       <div class="wizard-param-pair">
         ${intSlider('Hypothetical space-based kinetic boost interceptors in orbit', 'nSpaceBoostKinetic', 0, 4000, 1, d.nSpaceBoostKinetic ?? 0)}
         ${probSlider('Hypothetical space-based kinetic boost interceptor kill probability', 'pkSpaceBoostKinetic', pkbK)}
       </div>
       <div class="wizard-param-pair">
-        ${intSlider('Hypothetical space-based directed-energy boost interceptors in orbit', 'nSpaceBoostDirected', 0, 4000, 1, d.nSpaceBoostDirected ?? 0)}
+        ${intSlider('Hypothetical space-based directed-energy interceptor platforms in orbit', 'nSpaceBoostDirected', 0, 4000, 1, d.nSpaceBoostDirected ?? 0)}
         ${probSlider('Hypothetical space-based directed-energy boost interceptor kill probability', 'pkSpaceBoostDirected', pkbD)}
       </div>
-      ${intSlider('Directed-energy boost engagement opportunities per platform', 'boostDirectedTargetsPerPlatform', 1, 9, 1, boostDirectedTargetsPerPlatform)}
+      ${intSlider('Boost-phase directed-energy engagement opportunities per hypothetical orbital platform (aggregated capacity assumption)', 'boostDirectedTargetsPerPlatform', 1, 9, 1, boostDirectedTargetsPerPlatform)}
+      <div class="wizard-slider-note">
+        Reduced-form boost capacity assumption: this opportunities value aggregates boost-window time limits, dwell time, retarget/slew time, and track custody/handoff constraints into a single per-platform engagement budget.
+      </div>
+      <div class="wizard-subphase-title">Midcourse phase</div>
+      <div class="wizard-param-pair">
+        ${intSlider('Hypothetical space-based kinetic midcourse interceptors in orbit', 'nMidcourseSpaceKinetic', 0, 4000, 1, nMidcourseSpaceKinetic)}
+        ${probSlider('Hypothetical space-based kinetic midcourse interceptor kill probability', 'pkMidcourseSpaceKinetic', pkMidcourseSpaceKinetic)}
+      </div>
+      <div class="wizard-param-pair">
+        ${intSlider('Hypothetical space-based directed-energy midcourse interceptor platforms in orbit', 'nMidcourseSpaceLaser', 0, 4000, 1, nMidcourseSpaceLaser)}
+        ${probSlider('Hypothetical space-based directed-energy midcourse interceptor kill probability', 'pkMidcourseSpaceLaser', pkMidcourseSpaceLaser)}
+      </div>
+      ${intSlider('Directed-energy midcourse engagement opportunities per hypothetical orbital platform', 'midcourseDirectedTargetsPerPlatform', 1, 8, 1, midcourseDirectedTargetsPerPlatform)}
+      <div class="wizard-slider-note">
+        Directed-energy systems are modeled as orbital platforms capable of multiple engagements during the phase window. Engagement opportunities are calculated as platforms x opportunities per platform x phase availability.
+      </div>
+      <h5>Advanced assumptions</h5>
+      ${probSlider('Midcourse space interceptor availability (fraction of constellation able to engage)', 'midcourseSpaceAvailabilityMultiplier', midcourseSpaceAvailabilityPct, undefined, 15, 45)}
+      <h5>Hypothetical terminal interceptor layers</h5>
+      <div class="wizard-param-pair">
+        ${intSlider('Hypothetical ground-based terminal kinetic interceptors in engagement range', 'nTerminalKinetic', 0, 4000, 1, nTerminalKinetic)}
+        ${probSlider('Hypothetical ground-based terminal kinetic interceptor kill probability', 'pkTerminalKinetic', pkTerminalKinetic)}
+      </div>
+      <div class="wizard-param-pair">
+        ${intSlider('Hypothetical ground-based terminal nuclear interceptors in engagement range', 'nTerminalNuclear', 0, 4000, 1, nTerminalNuclear)}
+        ${probSlider('Hypothetical ground-based terminal nuclear interceptor kill probability', 'pkTerminalNuclear', pkTerminalNuclear)}
+      </div>
       <h5>Blue system resilience assumptions</h5>
       ${probSlider('Blue system operational availability', 'pSystemUp', pSystemUpPct)}
       <div class="wizard-param-pair">
@@ -571,6 +748,8 @@ export function redParamsHTML(d) {
   const asatCyber = ((d.pAsatCyberEffect ?? 0.18) * 100).toFixed(1);
   const asatHitToKillPk = ((d.pAsatHitToKill ?? 0.40) * 100).toFixed(1);
   const asatNuclearPk = ((d.pAsatNuclearEffect ?? 0.55) * 100).toFixed(1);
+  const asatDetectPenalty = ((d.asatDetectPenalty ?? d.countermeasures?.asatDetectPenalty ?? 0) * 100).toFixed(1);
+  const asatSpacePkPenalty = ((d.asatSpacePkPenalty ?? d.countermeasures?.asatSpacePkPenalty ?? 0) * 100).toFixed(1);
   const boostEvade = ((d.boostEvasionPenalty ?? 0) * 100).toFixed(1);
   const launchRegion = d.launchRegion ?? 'default';
   return `
@@ -600,6 +779,10 @@ export function redParamsHTML(d) {
       <div class="wizard-param-pair">
         ${intSlider('Nuclear direct-ascent ASAT attacks', 'nAsatNuclear', 0, 1000, 1, d.nAsatNuclear ?? 0)}
         ${probSlider('Nuclear direct-ascent ASAT effectiveness', 'pAsatNuclearEffect', asatNuclearPk)}
+      </div>
+      <div class="wizard-param-pair">
+        ${probSlider('ASAT detection penalty against the space layer', 'asatDetectPenalty', asatDetectPenalty, undefined, 0)}
+        ${probSlider('ASAT space-interceptor kill-probability penalty', 'asatSpacePkPenalty', asatSpacePkPenalty, undefined, 0)}
       </div>
       ${probSlider('Boost-phase survivability and evasion', 'boostEvasionPenalty', boostEvade, undefined, 0)}
     </div>
@@ -637,27 +820,23 @@ export function renderDrawerControls(container, blueKey, redKey) {
         <p>${blueKey}</p>
         <div class="param-group">
           <label>
-            Detection + Tracking P:
+            Blue network baseline detection/tracking probability:
             <input type="number" class="param-input" data-param="pDetectTrack" min="0" max="1" step="0.01" value="${d.pDetectTrack}" />
           </label>
           <label>
-            Classifier TPR (W→W):
+            Blue network warhead discrimination accuracy (W->W):
             <input type="number" class="param-input" data-param="pClassifyWarhead" min="0" max="1" step="0.01" value="${d.pClassifyWarhead}" />
           </label>
           <label>
-            Classifier FPR (D→W):
+            Blue network discrimination false-alarm rate (D->W):
             <input type="number" class="param-input" data-param="pFalseAlarmDecoy" min="0" max="1" step="0.01" value="${d.pFalseAlarmDecoy}" />
           </label>
           <label>
-            Ground-based interceptor per shot kill probability for warheads:
+            Ground-based midcourse interceptor kill probability:
             <input type="number" class="param-input" data-param="pkWarhead" min="0" max="1" step="0.01" value="${d.pkWarhead}" />
           </label>
           <label>
-            Ground-based interceptor per shot kill probability for decoys:
-            <input type="number" class="param-input" data-param="pkDecoy" min="0" max="1" step="0.01" value="${d.pkDecoy}" />
-          </label>
-          <label>
-            Ground-based interceptors in engagement range:
+            Ground-based midcourse interceptors in engagement range (existing U.S. architecture):
             <input type="number" class="param-input" data-param="nInventory" min="0" step="1" value="${d.nInventory}" />
           </label>
           <label>
@@ -669,7 +848,7 @@ export function renderDrawerControls(container, blueKey, redKey) {
             <input type="number" class="param-input" data-param="pkSpaceBoostKinetic" min="0" max="1" step="0.01" value="${d.pkSpaceBoostKinetic ?? 0.5}" />
           </label>
           <label>
-            Hypothetical space-based directed-energy boost interceptors in orbit:
+            Hypothetical space-based directed-energy interceptor platforms in orbit:
             <input type="number" class="param-input" data-param="nSpaceBoostDirected" min="0" step="1" value="${d.nSpaceBoostDirected ?? 0}" />
           </label>
           <label>
@@ -677,7 +856,7 @@ export function renderDrawerControls(container, blueKey, redKey) {
             <input type="number" class="param-input" data-param="pkSpaceBoostDirected" min="0" max="1" step="0.01" value="${d.pkSpaceBoostDirected ?? 0.4}" />
           </label>
           <label>
-            Directed-energy boost engagement opportunities per platform:
+            Boost-phase directed-energy engagement opportunities per hypothetical orbital platform (aggregated capacity assumption):
             <input type="number" class="param-input" data-param="boostDirectedTargetsPerPlatform" min="1" max="9" step="1" value="${d.boostDirectedTargetsPerPlatform ?? 2}" />
           </label>
         </div>
