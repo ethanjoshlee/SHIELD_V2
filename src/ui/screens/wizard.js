@@ -369,7 +369,7 @@ export function renderWizard(container, transitionFn) {
         </div>
       </div>
       <div class="project-identity project-identity-right" aria-label="Project identity">
-        <div class="project-identity-title">Strategic Homeland Intercept Evaluation<br>and Layered Defense Model</div>
+        <div class="project-identity-title">Strategic Homeland Intercept Evaluation and Layered Defense Model</div>
         <div class="project-identity-attribution">Defense, Emerging Technology, and Strategy Program<br>Belfer Center for Science and International Affairs</div>
       </div>
     </div>
@@ -378,36 +378,110 @@ export function renderWizard(container, transitionFn) {
   container.appendChild(el);
   requestAnimationFrame(() => el.classList.add('active'));
 
-  // Wire sliders — sync range → value span (and hidden prob input where applicable)
-  el.querySelectorAll('[data-prob-target]').forEach(range => {
+  // Wire sliders — bidirectional sync between range + numeric input, with blur-time normalization.
+  const stepPrecision = (step) => {
+    const raw = String(step ?? '');
+    if (raw.includes('e-')) {
+      const exponent = parseInt(raw.split('e-')[1], 10);
+      return Number.isFinite(exponent) ? exponent : 0;
+    }
+    const dotIdx = raw.indexOf('.');
+    return dotIdx === -1 ? 0 : raw.length - dotIdx - 1;
+  };
+
+  const normalizeByStep = (value, min, max, step, clampBounds) => {
+    let next = value;
+    if (clampBounds) {
+      if (Number.isFinite(min)) next = Math.max(min, next);
+      if (Number.isFinite(max)) next = Math.min(max, next);
+    }
+    if (Number.isFinite(step) && step > 0) {
+      const base = Number.isFinite(min) ? min : 0;
+      next = base + Math.round((next - base) / step) * step;
+      if (clampBounds) {
+        if (Number.isFinite(min)) next = Math.max(min, next);
+        if (Number.isFinite(max)) next = Math.min(max, next);
+      }
+    }
+    const precision = stepPrecision(step);
+    const factor = 10 ** precision;
+    return Math.round(next * factor) / factor;
+  };
+
+  const formatByStep = (value, step) => {
+    const precision = stepPrecision(step);
+    return precision > 0 ? value.toFixed(precision) : String(Math.round(value));
+  };
+
+  const bindSliderPair = (range, onRangeSync = () => {}) => {
+    const row = range.closest('.wizard-slider-row');
+    const numberInput = row?.querySelector('.wizard-slider-input');
+    const min = range.min !== '' ? parseFloat(range.min) : NaN;
+    const max = range.max !== '' ? parseFloat(range.max) : NaN;
+    const step = range.step !== '' && range.step !== 'any' ? parseFloat(range.step) : NaN;
+
+    const syncFromRange = ({ syncInput = true } = {}) => {
+      const sliderValue = parseFloat(range.value);
+      if (!Number.isFinite(sliderValue)) return;
+      if (numberInput && syncInput) numberInput.value = formatByStep(sliderValue, step);
+      onRangeSync(sliderValue);
+    };
+
+    range.addEventListener('input', () => syncFromRange({ syncInput: true }));
+
+    if (numberInput) {
+      numberInput.addEventListener('input', () => {
+        const raw = numberInput.value.trim();
+        if (!raw || raw === '-' || raw === '.' || raw === '-.') return;
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed)) return;
+        if ((Number.isFinite(min) && parsed < min) || (Number.isFinite(max) && parsed > max)) return;
+        range.value = String(parsed);
+        syncFromRange({ syncInput: false });
+      });
+
+      numberInput.addEventListener('blur', () => {
+        const raw = numberInput.value.trim();
+        if (!raw || raw === '-' || raw === '.' || raw === '-.') {
+          syncFromRange();
+          return;
+        }
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed)) {
+          syncFromRange({ syncInput: true });
+          return;
+        }
+        const normalized = normalizeByStep(parsed, min, max, step, true);
+        range.value = String(normalized);
+        syncFromRange({ syncInput: true });
+      });
+
+      numberInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') numberInput.blur();
+      });
+    }
+
+    syncFromRange({ syncInput: true });
+  };
+
+  el.querySelectorAll('[data-prob-target]').forEach((range) => {
     const paramId = range.dataset.probTarget;
     const hidden = el.querySelector(`[data-param="${paramId}"]`);
-    const valueEl = range.closest('.wizard-slider-row').querySelector('.wizard-slider-value');
-    const sync = () => {
-      if (valueEl) valueEl.textContent = parseFloat(range.value).toFixed(1) + '%';
-      if (hidden) hidden.value = (parseFloat(range.value) / 100).toFixed(4);
-    };
-    range.addEventListener('input', sync);
-    sync();
+    bindSliderPair(range, (sliderValue) => {
+      if (hidden) hidden.value = (sliderValue / 100).toFixed(4);
+    });
   });
-  el.querySelectorAll('[data-degrade-target]').forEach(range => {
+
+  el.querySelectorAll('[data-degrade-target]').forEach((range) => {
     const paramId = range.dataset.degradeTarget;
     const hidden = el.querySelector(`[data-param="${paramId}"]`);
-    const valueEl = range.closest('.wizard-slider-row').querySelector('.wizard-slider-value');
-    const sync = () => {
-      const degradation = parseFloat(range.value);
-      if (valueEl) valueEl.textContent = degradation.toFixed(1) + '%';
-      if (hidden) hidden.value = (1 - (degradation / 100)).toFixed(4);
-    };
-    range.addEventListener('input', sync);
-    sync();
+    bindSliderPair(range, (sliderValue) => {
+      if (hidden) hidden.value = (1 - (sliderValue / 100)).toFixed(4);
+    });
   });
-  el.querySelectorAll('input[type="range"][data-param]').forEach(range => {
-    const valueEl = range.closest('.wizard-slider-row')?.querySelector('.wizard-slider-value');
-    if (!valueEl) return;
-    const sync = () => { valueEl.textContent = range.value; };
-    range.addEventListener('input', sync);
-    sync();
+
+  el.querySelectorAll('input[type="range"][data-param]').forEach((range) => {
+    bindSliderPair(range);
   });
 
   // Doctrine gating — initial + on change

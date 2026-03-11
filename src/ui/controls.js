@@ -296,13 +296,48 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
   };
 }
 
+function stepPrecision(step) {
+  const raw = String(step ?? '');
+  if (raw.includes('e-')) {
+    const exponent = parseInt(raw.split('e-')[1], 10);
+    return Number.isFinite(exponent) ? exponent : 0;
+  }
+  const dotIdx = raw.indexOf('.');
+  return dotIdx === -1 ? 0 : raw.length - dotIdx - 1;
+}
+
+function formatByStep(value, step) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return String(value ?? '');
+  const precision = stepPrecision(step);
+  return precision > 0 ? n.toFixed(precision) : String(Math.round(n));
+}
+
+function sliderValueInputHTML(label, value, min, max, step, unit = '') {
+  return `
+    <div class="wizard-slider-value">
+      <input
+        type="number"
+        class="wizard-slider-input"
+        value="${formatByStep(value, step)}"
+        min="${min}"
+        max="${max}"
+        step="${step}"
+        inputmode="decimal"
+        aria-label="${label}"
+      />
+      ${unit ? `<span class="wizard-slider-unit">${unit}</span>` : ''}
+    </div>
+  `;
+}
+
 function probSlider(label, param, pct, defaultPct, minPct = 0.1) {
   const v = defaultPct ?? pct;
   return `
     <div class="wizard-slider-row">
       <div class="wizard-slider-header">
         <span class="wizard-slider-label">${label}</span>
-        <span class="wizard-slider-value">${parseFloat(v).toFixed(1)}%</span>
+        ${sliderValueInputHTML(label, v, minPct, 99.9, 0.1, '%')}
       </div>
       <input type="range" class="wizard-slider" min="${minPct}" max="99.9" step="0.1" value="${v}" data-prob-target="${param}" />
       <input type="number" class="wizard-hidden-param" data-param="${param}" value="${(v / 100).toFixed(4)}" tabindex="-1" aria-hidden="true" />
@@ -314,7 +349,7 @@ function intSlider(label, param, min, max, step, defaultVal) {
     <div class="wizard-slider-row">
       <div class="wizard-slider-header">
         <span class="wizard-slider-label">${label}</span>
-        <span class="wizard-slider-value">${defaultVal}</span>
+        ${sliderValueInputHTML(label, defaultVal, min, max, step)}
       </div>
       <input type="range" class="wizard-slider" data-param="${param}" min="${min}" max="${max}" step="${step}" value="${defaultVal}" />
     </div>`;
@@ -327,7 +362,7 @@ function degradationSlider(label, param, multiplier, minPct = 0.1) {
     <div class="wizard-slider-row">
       <div class="wizard-slider-header">
         <span class="wizard-slider-label">${label}</span>
-        <span class="wizard-slider-value">${degradationPct.toFixed(1)}%</span>
+        ${sliderValueInputHTML(label, degradationPct, minPct, 99.9, 0.1, '%')}
       </div>
       <input type="range" class="wizard-slider" min="${minPct}" max="99.9" step="0.1" value="${degradationPct.toFixed(1)}" data-degrade-target="${param}" />
       <input type="number" class="wizard-hidden-param" data-param="${param}" value="${m.toFixed(4)}" tabindex="-1" aria-hidden="true" />
