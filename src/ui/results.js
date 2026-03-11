@@ -5,6 +5,7 @@
 import { fmt } from '../utils/format.js';
 import { renderHistogramHTML } from './charts.js';
 import { buildBoostScenario } from '../model/scenarioLayer.js';
+import { LAUNCH_REGION_PRESETS } from '../config/launchRegions.js';
 import { DELIVERED_KILOTONS_BENCHMARKS } from './deliveredKilotonsBenchmarks.js';
 
 function resolveDeliveredStepSize(params) {
@@ -213,7 +214,7 @@ export function renderResultsContent(params, result) {
         </div>
         <div class="result-item">
           <span class="label">Launch region preset:</span>
-          <span class="value">${launchRegion}</span>
+          <span class="value">${LAUNCH_REGION_PRESETS[launchRegion]?.label ?? launchRegion}</span>
         </div>
         <div class="result-item">
           <span class="label">Cyber / EW disruption effectiveness against the space layer:</span>
@@ -302,6 +303,19 @@ export function renderResultsContent(params, result) {
         <div class="result-item">
           <span class="label">Terminal: Warheads Killed</span>
           <span class="value">${fmt(s.meanTerminalWarheadsKilled, 2)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Architecture cost (only shown when interceptors data is available)
+  if (s.architectureCost_M > 0) {
+    html += `
+      <h3>Architecture Cost</h3>
+      <div class="results-grid">
+        <div class="result-item">
+          <span class="label">Estimated interceptor architecture cost:</span>
+          <span class="value">$${fmt(s.architectureCost_B, 1)}B</span>
         </div>
       </div>
     `;

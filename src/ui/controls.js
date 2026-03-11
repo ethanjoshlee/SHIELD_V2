@@ -251,6 +251,78 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
   const seedVal = (getValue("seed", "seed", "").trim());
   const seed = seedVal === "" ? null : parseInt(seedVal, 10) || 0;
 
+  // --- Construct multi-phase structured params from flat UI values + presets ---
+
+  // Interceptors: UI-controlled types use slider values; preset-only types use
+  // blue preset data (or zero if no preset). This activates the multi-phase
+  // engine while keeping all existing slider behavior intact.
+  const presetInterceptors = bluePreset?.interceptors ?? {};
+  const interceptors = {
+    boost_kinetic: {
+      deployed: nSpaceBoostKinetic,
+      pk: pkSpaceBoostKinetic,
+      costPerUnit_M: presetInterceptors.boost_kinetic?.costPerUnit_M ?? 15,
+      phase: "boost",
+    },
+    boost_laser: {
+      deployed: nSpaceBoostDirected,
+      pk: pkSpaceBoostDirected,
+      costPerUnit_M: presetInterceptors.boost_laser?.costPerUnit_M ?? 25,
+      phase: "boost",
+    },
+    midcourse_gbi: {
+      deployed: nInventory,
+      pk: pkWarhead,
+      costPerUnit_M: presetInterceptors.midcourse_gbi?.costPerUnit_M ?? 75,
+      phase: "midcourse",
+    },
+    midcourse_kinetic: {
+      deployed: presetInterceptors.midcourse_kinetic?.deployed ?? 0,
+      pk: presetInterceptors.midcourse_kinetic?.pk ?? 0.50,
+      costPerUnit_M: presetInterceptors.midcourse_kinetic?.costPerUnit_M ?? 15,
+      phase: "midcourse",
+    },
+    midcourse_laser: {
+      deployed: presetInterceptors.midcourse_laser?.deployed ?? 0,
+      pk: presetInterceptors.midcourse_laser?.pk ?? 0.40,
+      costPerUnit_M: presetInterceptors.midcourse_laser?.costPerUnit_M ?? 25,
+      phase: "midcourse",
+    },
+    terminal_kinetic: {
+      deployed: presetInterceptors.terminal_kinetic?.deployed ?? 0,
+      pk: presetInterceptors.terminal_kinetic?.pk ?? 0.80,
+      costPerUnit_M: presetInterceptors.terminal_kinetic?.costPerUnit_M ?? 3,
+      phase: "terminal",
+    },
+    terminal_nuclear: {
+      deployed: presetInterceptors.terminal_nuclear?.deployed ?? 0,
+      pk: presetInterceptors.terminal_nuclear?.pk ?? 0.95,
+      costPerUnit_M: presetInterceptors.terminal_nuclear?.costPerUnit_M ?? 50,
+      phase: "terminal",
+    },
+  };
+
+  // Missile classes: synthetic single class from flat slider values. This
+  // preserves current wizard behavior while activating multi-phase routing.
+  // Per-class fidelity (passing preset missileClasses directly) is a future step.
+  const missileClasses = {
+    strike: {
+      count: nMissiles,
+      mirvsPerMissile,
+      decoysPerWarhead,
+      yieldKt: kilotonsPerWarhead,
+      boostEvasion: boostEvasionPenalty,
+    },
+  };
+
+  // Countermeasures: pass from red preset if available (affects non-boost
+  // space-based interceptor detection and Pk in multi-phase engine).
+  const countermeasures = redPreset?.countermeasures ?? {
+    asatType: "none",
+    asatDetectPenalty: 0,
+    asatSpacePkPenalty: 0,
+  };
+
   return {
     nMissiles,
     mirvsPerMissile,
@@ -293,6 +365,9 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     seed,
     blueKey,
     redKey,
+    interceptors,
+    missileClasses,
+    countermeasures,
   };
 }
 
