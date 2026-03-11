@@ -120,6 +120,16 @@ export const DELIVERED_KILOTONS_BENCHMARKS = [
     sourceUrl: "https://www.airuniversity.af.edu/Portals/10/AUPress/Books/B_0020_SPANGRUD_STRATEGIC_BOMBING_SURVEYS.pdf"
   },
   {
+    id: "ww2_total_bombing",
+    label: "World War II total bombing (All Sides, 1939–45)",
+    valueKt: 4000,
+    category: "conventional_aggregate",
+    scope: "Estimated total bomb mass dropped by all combatants (Allied and Axis). This is a mass-to-yield comparison where 1,000 tons of conventional ordnance is charted as 1 kt.",
+    sourceMeasure: "≈4,000,000 tons of ordnance (mass)",
+    sourceNote: "Aggregated from USSBS European and Pacific summaries plus estimates for Soviet and Axis tactical expenditures.",
+    sourceUrl: "https://www.airuniversity.af.edu/Portals/10/AUPress/Books/B_0020_SPANGRUD_STRATEGIC_BOMBING_SURVEYS.pdf"
+  },
+  {
     id: "indochina_us_total",
     label: "U.S. Indochina air-delivered ordnance (Vietnam, Laos, Cambodia; 1964–73)",
     valueKt: 7662,
@@ -128,5 +138,25 @@ export const DELIVERED_KILOTONS_BENCHMARKS = [
     sourceMeasure: "7,662,000 tons of ordnance (mass)",
     sourceNote: "Clodfelter / standard secondary compilation",
     sourceUrl: "https://www.researchgate.net/publication/373644576_Armed_Conflict_and_Environment_From_World_War_II_to_Contemporary_Asymmetric_Warfare_Nomos"
+  },
+  {
+    id: "nuclear_testing_total",
+    label: "Cumulative nuclear detonations (tests + wartime use, 1945–present)",
+    valueKt: 540000,
+    category: "nuclear_aggregate",
+    scope: "Cumulative explosive yield of all nuclear detonations including nuclear tests and the Hiroshima/Nagasaki wartime detonations.",
+    sourceMeasure: "≈540 megatons TNT equivalent",
+    sourceNote: "UNSCEAR 2000 report and CTBTO nuclear testing records.",
+    sourceUrl: "https://www.unscear.org/unscear/en/publications/2000_1.html"
+  },
+  {
+  id: "twentieth_century_conflict_aggregate",
+  label: "20th-century conflict bombing benchmark (WWII + Korea + Vietnam + Desert Storm)",
+  valueKt: 12168.9,
+  category: "conventional_aggregate",
+  scope: "Derived aggregate of selected broad non-overlapping conflict bombing/ordnance benchmarks already in this dataset: World War II total bombing, Korean War bombing, U.S. Indochina air-delivered ordnance, and Desert Storm. This is a mass-conversion benchmark where 1,000 tons of conventional bombs/ordnance is charted as 1 kt.",
+  sourceMeasure: "Derived sum: 4,000 + 418.4 + 7,662 + 88.5 = 12,168.9 kt",
+  sourceNote: "Derived aggregate from existing benchmark entries in deliveredKilotonsBenchmarks.js; included to provide a high-scale conventional conflict comparison without double-counting nested campaign totals.",
+  sourceUrl: ""
   }
 ];

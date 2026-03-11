@@ -229,8 +229,13 @@ function formatReferenceValueKt(value) {
   return Number(value).toLocaleString('en-US', { maximumFractionDigits: 3 });
 }
 
+function isNuclearReferenceCategory(category) {
+  const normalized = String(category ?? '').toLowerCase();
+  return normalized === 'nuclear' || normalized.startsWith('nuclear_');
+}
+
 function categoryDescription(category) {
-  if (category === 'nuclear') return 'Nuclear yield benchmark';
+  if (isNuclearReferenceCategory(category)) return 'Nuclear yield/aggregate benchmark';
   return 'Conventional bomb/ordnance mass benchmark (mass converted using 1,000 tons = 1 kt)';
 }
 
@@ -264,8 +269,8 @@ function selectVisibleReferenceMarkers(candidates, maxVisible) {
     .map((idx) => candidates[idx]);
 }
 
-function selectFallbackAnchorMarker(referenceMarkers, axisMax, plotMin, plotMax) {
-  if (!Array.isArray(referenceMarkers) || !referenceMarkers.length) return null;
+function selectFallbackAnchorMarkers(referenceMarkers, axisMax, plotMin, plotMax) {
+  if (!Array.isArray(referenceMarkers) || !referenceMarkers.length) return [];
   const eligible = referenceMarkers
     .map((marker) => {
       const valueKt = Number(marker?.valueKt);
@@ -278,17 +283,46 @@ function selectFallbackAnchorMarker(referenceMarkers, axisMax, plotMin, plotMax)
     })
     .filter(Boolean)
     .sort((a, b) => (b.valueKt - a.valueKt) || String(a.id).localeCompare(String(b.id)));
+  if (!eligible.length) return [];
 
-  if (!eligible.length) return null;
-  const anchor = eligible[0];
   const plotSpan = plotMax - plotMin;
-  const rawPct = plotSpan > 0 ? ((anchor.valueKt - plotMin) / plotSpan) * 100 : 0;
-  return {
-    ...anchor,
-    pct: clamp(rawPct, 0, 100),
-    rawPct,
-    isFallbackAnchor: true,
+  const toAnchor = (marker, rank) => {
+    const rawPct = plotSpan > 0 ? ((marker.valueKt - plotMin) / plotSpan) * 100 : 0;
+    return {
+      ...marker,
+      pct: clamp(rawPct, 0, 100),
+      rawPct,
+      isFallbackAnchor: true,
+      fallbackAnchorRank: rank,
+    };
   };
+
+  const anchors = [toAnchor(eligible[0], 1)];
+
+  // In very large-domain views, preserve one additional large-scale anchor line
+  // below the top protected anchor for scale interpretation.
+  if (eligible.length >= 2 && anchors[0].rawPct < 1) {
+    const second = toAnchor(eligible[1], 2);
+    const domainVsSecond = plotMin > 0 ? plotMin / Math.max(1e-9, second.valueKt) : 0;
+    if (domainVsSecond >= 5) anchors.push(second);
+  }
+
+  return anchors;
+}
+
+function applyProtectedAnchorJitter(markers, opts = {}) {
+  if (!Array.isArray(markers) || markers.length < 2) return markers;
+  const jitterStepPx = clamp(Number(opts?.referenceProtectedAnchorJitterPx) || 4, 1, 8);
+
+  const protectedNearLeft = markers
+    .filter((marker) => marker.isFallbackAnchor && marker.pct <= 0.5)
+    .sort((a, b) => (a.valueKt - b.valueKt) || String(a.id).localeCompare(String(b.id)));
+
+  if (protectedNearLeft.length < 2) return markers;
+  for (let i = 0; i < protectedNearLeft.length; i++) {
+    protectedNearLeft[i].visualOffsetPx = i * jitterStepPx;
+  }
+  return markers;
 }
 
 function resolveReferenceMarkers(referenceMarkers, chartDomain, opts = {}) {
@@ -320,9 +354,21 @@ function resolveReferenceMarkers(referenceMarkers, chartDomain, opts = {}) {
 
   let visible = selectVisibleReferenceMarkers(candidates, maxVisible);
   if (!visible.length) {
-    const fallbackAnchor = selectFallbackAnchorMarker(referenceMarkers, axisMax, plotMin, plotMax);
-    if (fallbackAnchor) visible = [fallbackAnchor];
+    const fallbackAnchors = selectFallbackAnchorMarkers(referenceMarkers, axisMax, plotMin, plotMax);
+    if (fallbackAnchors.length) visible = fallbackAnchors;
+  } else if (visible.length === 1) {
+    const fallbackAnchors = selectFallbackAnchorMarkers(referenceMarkers, axisMax, plotMin, plotMax);
+    if (fallbackAnchors.length >= 2) {
+      const existingIds = new Set(visible.map((marker) => String(marker.id)));
+      for (const anchor of fallbackAnchors) {
+        if (existingIds.has(String(anchor.id))) continue;
+        visible.push(anchor);
+        if (visible.length >= maxVisible) break;
+      }
+      visible.sort((a, b) => (a.valueKt - b.valueKt) || String(a.id).localeCompare(String(b.id)));
+    }
   }
+  visible = applyProtectedAnchorJitter(visible, opts);
   let labelsUsed = 0;
   let lastLabeledPct = -Infinity;
 
@@ -358,6 +404,9 @@ function buildReferenceTooltip(marker) {
   if (marker.isFallbackAnchor && marker.rawPct < 0) {
     lines.push('Display note: benchmark is below the visible x-domain; anchored at left edge for scale context.');
   }
+  if (Number(marker.visualOffsetPx) !== 0) {
+    lines.push(`Display note: line shifted ${marker.visualOffsetPx}px right for visibility; value remains exact.`);
+  }
   return lines.join('\n');
 }
 
@@ -373,7 +422,7 @@ function buildReferenceMarkersHtml(referenceMarkers, chartDomain, opts = {}) {
           : marker.pct >= 96
             ? ' chart-reference-marker--end'
             : '';
-      const kindClass = marker.category === 'nuclear'
+      const kindClass = isNuclearReferenceCategory(marker.category)
         ? ' chart-reference-marker--nuclear'
         : ' chart-reference-marker--conventional';
       const tooltipText = buildReferenceTooltip(marker);
@@ -384,7 +433,7 @@ function buildReferenceMarkersHtml(referenceMarkers, chartDomain, opts = {}) {
         : '';
 
       return `
-        <div class="chart-reference-marker${edgeClass}${kindClass}" style="left:${marker.pct}%">
+        <div class="chart-reference-marker${edgeClass}${kindClass}" style="left:${marker.pct}%;--chart-reference-marker-jitter:${Number(marker.visualOffsetPx) || 0}px">
           <span class="chart-reference-marker-line"></span>
           ${labelHtml}
           <span class="chart-reference-marker-hit" tabindex="0" title="${tooltipAttr}" aria-label="${tooltipAttr}">
