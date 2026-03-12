@@ -12,10 +12,10 @@
   --text-primary: #e0e0e8;
   --text-secondary: #D1D1E2;
   --text-dim: #AEAEC2;
-  --accent-blue: #00d4ff;
-  --accent-blue-dim: rgba(0, 212, 255, 0.15);
-  --accent-red: #ff4444;
-  --accent-red-dim: rgba(255, 68, 68, 0.15);
+  --accent-blue: #0099bb;
+  --accent-blue-dim: rgba(0, 153, 187, 0.12);
+  --accent-red: #cc2c2c;
+  --accent-red-dim: rgba(204, 44, 44, 0.12);
   --accent-amber: #ffaa00;
   --accent-green: #00ff88;
   --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
@@ -1669,6 +1669,62 @@ input[type="range"]::-moz-range-thumb {
   gap: var(--wizard-space-group);
 }
 
+/* ── Internal tab strip (within Blue / Red wizard steps) ── */
+
+.wizard-tab-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  margin-bottom: var(--wizard-space-group);
+  flex-shrink: 0;
+}
+
+.wizard-tab {
+  padding: 7px 11px;
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.wizard-tab:hover {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.wizard-tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-blue);
+}
+
+.step-params[data-step="red"] .wizard-tab.active {
+  border-bottom-color: var(--accent-red);
+}
+
+.wizard-tab-panel {
+  display: none;
+}
+
+.wizard-tab-panel.active {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wizard-space-group);
+}
+
+/* Red step slider color override */
+.step-params[data-step="red"] input[type="range"]::-webkit-slider-thumb {
+  background: var(--accent-red);
+}
+
+.step-params[data-step="red"] input[type="range"]::-moz-range-thumb {
+  background: var(--accent-red);
+}
+
 .wizard-param-group {
   display: flex;
   flex-direction: column;
@@ -1682,6 +1738,12 @@ input[type="range"]::-moz-range-thumb {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 500;
+}
+
+.wizard-phase-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0 0 0;
 }
 
 .wizard-subphase-title {

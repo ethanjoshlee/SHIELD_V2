@@ -522,6 +522,23 @@ export function renderWizard(container, transitionFn) {
     doctrineModeInput.dispatchEvent(new Event('change', { bubbles: true }));
   });
 
+  // Internal tab switching (within Blue / Red steps)
+  el.addEventListener('click', (event) => {
+    const tab = event.target.closest('.wizard-tab[data-tab]');
+    if (!tab || !el.contains(tab)) return;
+    const strip = tab.closest('.wizard-tab-strip');
+    if (!strip) return;
+    const tabId = tab.dataset.tab;
+    // Deactivate all tabs in this strip
+    strip.querySelectorAll('.wizard-tab').forEach((t) => t.classList.remove('active'));
+    tab.classList.add('active');
+    // Show the matching panel, hide siblings
+    const container = strip.parentElement;
+    container.querySelectorAll('.wizard-tab-panel').forEach((panel) => {
+      panel.classList.toggle('active', panel.dataset.tabPanel === tabId);
+    });
+  });
+
   // Globe — fresh init per invocation
   const globeContainer = el.querySelector('.wizard-right');
   initGlobe(globeContainer);

@@ -647,91 +647,125 @@ export function blueParamsHTML(d) {
       </div>
   `;
   return `
-    <div class="wizard-param-group">
-      <h5>Blue sensing, tracking, and discrimination assumptions</h5>
-      <div class="wizard-param-pair">
-        ${probSlider('Blue network baseline missile/object detection and tracking probability', 'pDetectTrack', pdt)}
-        ${probSlider('Blue network warhead discrimination accuracy (warhead classified as warhead)', 'pClassifyWarhead', pcw)}
-      </div>
-      ${probSlider('Blue network discrimination false-alarm rate (decoy misclassified as warhead)', 'pFalseAlarmDecoy', pfa)}
-      <div class="wizard-slider-note">
-        These global Blue sensing/tracking/discrimination assumptions are upstream of interceptor engagement. Midcourse outcomes are especially sensitive to warhead/decoy discrimination quality.
-      </div>
-      <h5>Ground-based midcourse layer (existing U.S. architecture)</h5>
-      ${intSlider('Existing ground-based midcourse interceptors in engagement range', 'nInventory', 0, 2000, 1, d.nInventory)}
-      ${probSlider('Ground-based midcourse interceptor kill probability', 'pkWarhead', pkw)}
-      <h5>Hypothetical space-based interceptor layers</h5>
-      <div class="wizard-subphase-title">Boost phase</div>
-      <div class="wizard-param-pair">
-        ${intSlider('Hypothetical space-based kinetic boost interceptors in orbit', 'nSpaceBoostKinetic', 0, 4000, 1, d.nSpaceBoostKinetic ?? 0)}
-        ${probSlider('Hypothetical space-based kinetic boost interceptor kill probability', 'pkSpaceBoostKinetic', pkbK)}
-      </div>
-      <div class="wizard-param-pair">
-        ${intSlider('Hypothetical space-based directed-energy interceptor platforms in orbit', 'nSpaceBoostDirected', 0, 4000, 1, d.nSpaceBoostDirected ?? 0)}
-        ${probSlider('Hypothetical space-based directed-energy boost interceptor kill probability', 'pkSpaceBoostDirected', pkbD)}
-      </div>
-      ${intSlider('Boost-phase directed-energy engagement opportunities per hypothetical orbital platform (aggregated capacity assumption)', 'boostDirectedTargetsPerPlatform', 1, 9, 1, boostDirectedTargetsPerPlatform)}
-      <div class="wizard-slider-note">
-        Reduced-form boost capacity assumption: this opportunities value aggregates boost-window time limits, dwell time, retarget/slew time, and track custody/handoff constraints into a single per-platform engagement budget.
-      </div>
-      <div class="wizard-subphase-title">Midcourse phase</div>
-      <div class="wizard-param-pair">
-        ${intSlider('Hypothetical space-based kinetic midcourse interceptors in orbit', 'nMidcourseSpaceKinetic', 0, 4000, 1, nMidcourseSpaceKinetic)}
-        ${probSlider('Hypothetical space-based kinetic midcourse interceptor kill probability', 'pkMidcourseSpaceKinetic', pkMidcourseSpaceKinetic)}
-      </div>
-      <div class="wizard-param-pair">
-        ${intSlider('Hypothetical space-based directed-energy midcourse interceptor platforms in orbit', 'nMidcourseSpaceLaser', 0, 4000, 1, nMidcourseSpaceLaser)}
-        ${probSlider('Hypothetical space-based directed-energy midcourse interceptor kill probability', 'pkMidcourseSpaceLaser', pkMidcourseSpaceLaser)}
-      </div>
-      ${intSlider('Directed-energy midcourse engagement opportunities per hypothetical orbital platform', 'midcourseDirectedTargetsPerPlatform', 1, 8, 1, midcourseDirectedTargetsPerPlatform)}
-      <div class="wizard-slider-note">
-        Directed-energy systems are modeled as orbital platforms capable of multiple engagements during the phase window. Engagement opportunities are calculated as platforms x opportunities per platform x phase availability.
-      </div>
-      <h5>Advanced assumptions</h5>
-      ${probSlider('Midcourse space interceptor availability (fraction of constellation able to engage)', 'midcourseSpaceAvailabilityMultiplier', midcourseSpaceAvailabilityPct, undefined, 15, 45)}
-      <h5>Hypothetical terminal interceptor layers</h5>
-      <div class="wizard-param-pair">
-        ${intSlider('Hypothetical ground-based terminal kinetic interceptors in engagement range', 'nTerminalKinetic', 0, 4000, 1, nTerminalKinetic)}
-        ${probSlider('Hypothetical ground-based terminal kinetic interceptor kill probability', 'pkTerminalKinetic', pkTerminalKinetic)}
-      </div>
-      <div class="wizard-param-pair">
-        ${intSlider('Hypothetical ground-based terminal nuclear interceptors in engagement range', 'nTerminalNuclear', 0, 4000, 1, nTerminalNuclear)}
-        ${probSlider('Hypothetical ground-based terminal nuclear interceptor kill probability', 'pkTerminalNuclear', pkTerminalNuclear)}
-      </div>
-      <h5>Blue system resilience assumptions</h5>
-      ${probSlider('Blue system operational availability', 'pSystemUp', pSystemUpPct)}
-      <div class="wizard-param-pair">
-        ${degradationSlider('Detection/tracking degradation when the Blue system fails', 'detectDegradeFactor', detectDegradeFactor)}
-        ${degradationSlider('Interceptor kill-probability degradation when the Blue system fails', 'pkDegradeFactor', pkDegradeFactor)}
-      </div>
+    <div class="wizard-tab-strip" data-tab-group="blue">
+      <div class="wizard-tab active" data-tab="blue-sensing">Sensors and Detection</div>
+      <div class="wizard-tab" data-tab="blue-gbi">Ground-Based Midcourse Interceptors</div>
+      <div class="wizard-tab" data-tab="blue-space">Hypothetical Space-Based Interceptors</div>
+      <div class="wizard-tab" data-tab="blue-terminal">Hypothetical Terminal Interceptors</div>
+      <div class="wizard-tab" data-tab="blue-system">System Status</div>
+    </div>
 
-      ${doctrineToggleHTML(
-        'Ground-based kinetic midcourse engagement doctrine',
-        'midcourseKineticDoctrineMode',
-        midcourseDoctrineMode
-      )}
-      <div class="doctrine-midcourse-kinetic-barrage-only">
-        ${intSlider('Ground-based kinetic midcourse shots per detected/tracked target', 'midcourseKineticShotsPerTarget', 1, 6, 1, midcourseShotsPerTarget)}
-      </div>
-      <div class="doctrine-midcourse-kinetic-sls-only" style="display:none">
+    <!-- Tab 1: Sensing, Tracking & Discrimination -->
+    <div class="wizard-tab-panel active" data-tab-panel="blue-sensing">
+      <div class="wizard-param-group">
         <div class="wizard-param-pair">
-          ${intSlider('Ground-based kinetic midcourse max shots per detected/tracked target', 'midcourseKineticMaxShotsPerTarget', 1, 6, 1, midcourseMaxShotsPerTarget)}
-          ${probSlider('Ground-based kinetic midcourse re-engagement probability per detected/tracked target', 'midcourseKineticPReengage', preMid)}
+          ${probSlider('Blue network baseline missile/object detection and tracking probability', 'pDetectTrack', pdt)}
+          ${probSlider('Blue network warhead discrimination accuracy (warhead classified as warhead)', 'pClassifyWarhead', pcw)}
+        </div>
+        ${probSlider('Blue network discrimination false-alarm rate (decoy misclassified as warhead)', 'pFalseAlarmDecoy', pfa)}
+        <div class="wizard-slider-note">
+          These global Blue sensing/tracking/discrimination assumptions are upstream of interceptor engagement. Midcourse outcomes are especially sensitive to warhead/decoy discrimination quality.
         </div>
       </div>
+    </div>
 
-      ${doctrineToggleHTML(
-        'Hypothetical space-based kinetic boost engagement doctrine',
-        'boostKineticDoctrineMode',
-        boostKineticDoctrineMode
-      )}
-      <div class="doctrine-boost-kinetic-barrage-only">
-        ${intSlider('Hypothetical space-based kinetic boost shots per detected/tracked boost-phase missile', 'boostKineticShotsPerTarget', 1, 6, 1, boostKineticShotsPerTarget)}
+    <!-- Tab 2: Existing Ground-Based Midcourse Interceptors -->
+    <div class="wizard-tab-panel" data-tab-panel="blue-gbi">
+      <div class="wizard-param-group">
+        ${intSlider('Existing ground-based midcourse interceptors in engagement range', 'nInventory', 0, 2000, 1, d.nInventory)}
+        ${probSlider('Ground-based midcourse interceptor kill probability', 'pkWarhead', pkw)}
+
+        ${doctrineToggleHTML(
+          'Ground-based kinetic midcourse engagement doctrine',
+          'midcourseKineticDoctrineMode',
+          midcourseDoctrineMode
+        )}
+        <div class="doctrine-midcourse-kinetic-barrage-only">
+          ${intSlider('Ground-based kinetic midcourse shots per detected/tracked target', 'midcourseKineticShotsPerTarget', 1, 6, 1, midcourseShotsPerTarget)}
+        </div>
+        <div class="doctrine-midcourse-kinetic-sls-only" style="display:none">
+          <div class="wizard-param-pair">
+            ${intSlider('Ground-based kinetic midcourse max shots per detected/tracked target', 'midcourseKineticMaxShotsPerTarget', 1, 6, 1, midcourseMaxShotsPerTarget)}
+            ${probSlider('Ground-based kinetic midcourse re-engagement probability per detected/tracked target', 'midcourseKineticPReengage', preMid)}
+          </div>
+        </div>
       </div>
-      <div class="doctrine-boost-kinetic-sls-only" style="display:none">
+    </div>
+
+    <!-- Tab 3: Hypothetical Space-Based Interceptors -->
+    <div class="wizard-tab-panel" data-tab-panel="blue-space">
+      <div class="wizard-param-group">
+        <h5>Boost phase</h5>
         <div class="wizard-param-pair">
-          ${intSlider('Hypothetical space-based kinetic boost max shots per detected/tracked boost-phase missile', 'boostKineticMaxShotsPerTarget', 1, 6, 1, boostKineticMaxShotsPerTarget)}
-          ${probSlider('Hypothetical space-based kinetic boost re-engagement probability per detected/tracked boost-phase missile', 'boostKineticPReengage', preBoostKinetic)}
+          ${intSlider('Hypothetical space-based kinetic boost interceptors in orbit', 'nSpaceBoostKinetic', 0, 4000, 1, d.nSpaceBoostKinetic ?? 0)}
+          ${probSlider('Hypothetical space-based kinetic boost interceptor kill probability', 'pkSpaceBoostKinetic', pkbK)}
+        </div>
+        <div class="wizard-param-pair">
+          ${intSlider('Hypothetical space-based directed-energy interceptor platforms in orbit', 'nSpaceBoostDirected', 0, 4000, 1, d.nSpaceBoostDirected ?? 0)}
+          ${probSlider('Hypothetical space-based directed-energy boost interceptor kill probability', 'pkSpaceBoostDirected', pkbD)}
+        </div>
+        ${intSlider('Boost-phase directed-energy engagement opportunities per hypothetical orbital platform (aggregated capacity assumption)', 'boostDirectedTargetsPerPlatform', 1, 9, 1, boostDirectedTargetsPerPlatform)}
+        <div class="wizard-slider-note">
+          Reduced-form boost capacity assumption: this opportunities value aggregates boost-window time limits, dwell time, retarget/slew time, and track custody/handoff constraints into a single per-platform engagement budget.
+        </div>
+
+        ${doctrineToggleHTML(
+          'Hypothetical space-based kinetic boost engagement doctrine',
+          'boostKineticDoctrineMode',
+          boostKineticDoctrineMode
+        )}
+        <div class="doctrine-boost-kinetic-barrage-only">
+          ${intSlider('Hypothetical space-based kinetic boost shots per detected/tracked boost-phase missile', 'boostKineticShotsPerTarget', 1, 6, 1, boostKineticShotsPerTarget)}
+        </div>
+        <div class="doctrine-boost-kinetic-sls-only" style="display:none">
+          <div class="wizard-param-pair">
+            ${intSlider('Hypothetical space-based kinetic boost max shots per detected/tracked boost-phase missile', 'boostKineticMaxShotsPerTarget', 1, 6, 1, boostKineticMaxShotsPerTarget)}
+            ${probSlider('Hypothetical space-based kinetic boost re-engagement probability per detected/tracked boost-phase missile', 'boostKineticPReengage', preBoostKinetic)}
+          </div>
+        </div>
+
+        <hr class="wizard-phase-divider" />
+        <h5>Midcourse phase</h5>
+        <div class="wizard-param-pair">
+          ${intSlider('Hypothetical space-based kinetic midcourse interceptors in orbit', 'nMidcourseSpaceKinetic', 0, 4000, 1, nMidcourseSpaceKinetic)}
+          ${probSlider('Hypothetical space-based kinetic midcourse interceptor kill probability', 'pkMidcourseSpaceKinetic', pkMidcourseSpaceKinetic)}
+        </div>
+        <div class="wizard-param-pair">
+          ${intSlider('Hypothetical space-based directed-energy midcourse interceptor platforms in orbit', 'nMidcourseSpaceLaser', 0, 4000, 1, nMidcourseSpaceLaser)}
+          ${probSlider('Hypothetical space-based directed-energy midcourse interceptor kill probability', 'pkMidcourseSpaceLaser', pkMidcourseSpaceLaser)}
+        </div>
+        ${intSlider('Directed-energy midcourse engagement opportunities per hypothetical orbital platform', 'midcourseDirectedTargetsPerPlatform', 1, 8, 1, midcourseDirectedTargetsPerPlatform)}
+        <div class="wizard-slider-note">
+          Directed-energy systems are modeled as orbital platforms capable of multiple engagements during the phase window. Engagement opportunities are calculated as platforms x opportunities per platform x phase availability.
+        </div>
+        ${probSlider('Midcourse space interceptor availability (fraction of constellation able to engage)', 'midcourseSpaceAvailabilityMultiplier', midcourseSpaceAvailabilityPct, undefined, 15, 45)}
+      </div>
+    </div>
+
+    <!-- Tab 4: Hypothetical Terminal Defense -->
+    <div class="wizard-tab-panel" data-tab-panel="blue-terminal">
+      <div class="wizard-param-group">
+        <div class="wizard-param-pair">
+          ${intSlider('Hypothetical ground-based terminal kinetic interceptors in engagement range', 'nTerminalKinetic', 0, 4000, 1, nTerminalKinetic)}
+          ${probSlider('Hypothetical ground-based terminal kinetic interceptor kill probability', 'pkTerminalKinetic', pkTerminalKinetic)}
+        </div>
+        <div class="wizard-param-pair">
+          ${intSlider('Hypothetical ground-based terminal nuclear interceptors in engagement range', 'nTerminalNuclear', 0, 4000, 1, nTerminalNuclear)}
+          ${probSlider('Hypothetical ground-based terminal nuclear interceptor kill probability', 'pkTerminalNuclear', pkTerminalNuclear)}
+        </div>
+        <div class="wizard-slider-note">
+          Terminal interceptors engage reentering warheads only. Lightweight exoatmospheric decoys are assumed not to survive reentry into the terminal engagement regime.
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: System-Level Assumptions -->
+    <div class="wizard-tab-panel" data-tab-panel="blue-system">
+      <div class="wizard-param-group">
+        ${probSlider('Blue system operational availability', 'pSystemUp', pSystemUpPct)}
+        <div class="wizard-param-pair">
+          ${degradationSlider('Detection/tracking degradation when the Blue system fails', 'detectDegradeFactor', detectDegradeFactor)}
+          ${degradationSlider('Interceptor kill-probability degradation when the Blue system fails', 'pkDegradeFactor', pkDegradeFactor)}
         </div>
       </div>
     </div>
@@ -753,38 +787,56 @@ export function redParamsHTML(d) {
   const boostEvade = ((d.boostEvasionPenalty ?? 0) * 100).toFixed(1);
   const launchRegion = d.launchRegion ?? 'default';
   return `
-    <div class="wizard-param-group">
-      <div class="wizard-param-pair">
-        ${intSlider('Ballistic missiles in strike', 'nMissiles', 1, 500, 1, d.nMissiles)}
-        ${intSlider('Warheads per missile', 'mirvsPerMissile', 1, 16, 1, d.mirvsPerMissile)}
-      </div>
-      <div class="wizard-param-pair">
-        ${intSlider('Decoys per missile', 'decoysPerMissile', 0, 40, 1, decoysPerMissile)}
-        ${intSlider('Kilotons per warhead', 'kilotonsPerWarhead', 20, 5000, 10, kilotonsPerWarhead)}
-      </div>
-      <div class="wizard-slider-row">
-        <div class="wizard-slider-header">
-          <span class="wizard-slider-label">Launch region preset</span>
+    <div class="wizard-tab-strip" data-tab-group="red">
+      <div class="wizard-tab active" data-tab="red-strike">Strike Salvo</div>
+      <div class="wizard-tab" data-tab="red-countermeasures">Penetration Aids</div>
+      <div class="wizard-tab" data-tab="red-counterspace">Counterspace Attack</div>
+    </div>
+
+    <!-- Tab 1: Strike Composition -->
+    <div class="wizard-tab-panel active" data-tab-panel="red-strike">
+      <div class="wizard-param-group">
+        <div class="wizard-param-pair">
+          ${intSlider('Ballistic missiles in strike', 'nMissiles', 1, 500, 1, d.nMissiles)}
+          ${intSlider('Warheads per missile', 'mirvsPerMissile', 1, 16, 1, d.mirvsPerMissile)}
         </div>
-        <select class="wizard-select" data-param="launchRegion">
-          ${launchRegionOptionsHTML(launchRegion)}
-        </select>
+        ${intSlider('Kilotons per warhead', 'kilotonsPerWarhead', 20, 5000, 10, kilotonsPerWarhead)}
+        <div class="wizard-slider-row">
+          <div class="wizard-slider-header">
+            <span class="wizard-slider-label">Launch region preset</span>
+          </div>
+          <select class="wizard-select" data-param="launchRegion">
+            ${launchRegionOptionsHTML(launchRegion)}
+          </select>
+        </div>
       </div>
-      <h5>Hypothetical counterspace attacks</h5>
-      ${probSlider('Cyber / EW disruption effectiveness against the space layer', 'pAsatCyberEffect', asatCyber)}
-      <div class="wizard-param-pair">
-        ${intSlider('Direct-ascent hit-to-kill ASAT attempts', 'nAsatHitToKill', 0, 1000, 1, d.nAsatHitToKill ?? 24)}
-        ${probSlider('Direct-ascent hit-to-kill ASAT effectiveness', 'pAsatHitToKill', asatHitToKillPk)}
+    </div>
+
+    <!-- Tab 2: Countermeasures -->
+    <div class="wizard-tab-panel" data-tab-panel="red-countermeasures">
+      <div class="wizard-param-group">
+        ${intSlider('Decoys per missile', 'decoysPerMissile', 0, 40, 1, decoysPerMissile)}
+        ${probSlider('Boost-phase survivability and evasion', 'boostEvasionPenalty', boostEvade, undefined, 0)}
       </div>
-      <div class="wizard-param-pair">
-        ${intSlider('Nuclear direct-ascent ASAT attacks', 'nAsatNuclear', 0, 1000, 1, d.nAsatNuclear ?? 0)}
-        ${probSlider('Nuclear direct-ascent ASAT effectiveness', 'pAsatNuclearEffect', asatNuclearPk)}
+    </div>
+
+    <!-- Tab 3: Counterspace -->
+    <div class="wizard-tab-panel" data-tab-panel="red-counterspace">
+      <div class="wizard-param-group">
+        ${probSlider('Cyber / EW disruption effectiveness against the space layer', 'pAsatCyberEffect', asatCyber)}
+        <div class="wizard-param-pair">
+          ${intSlider('Direct-ascent hit-to-kill ASAT attempts', 'nAsatHitToKill', 0, 1000, 1, d.nAsatHitToKill ?? 24)}
+          ${probSlider('Direct-ascent hit-to-kill ASAT effectiveness', 'pAsatHitToKill', asatHitToKillPk)}
+        </div>
+        <div class="wizard-param-pair">
+          ${intSlider('Nuclear direct-ascent ASAT attacks', 'nAsatNuclear', 0, 1000, 1, d.nAsatNuclear ?? 0)}
+          ${probSlider('Nuclear direct-ascent ASAT effectiveness', 'pAsatNuclearEffect', asatNuclearPk)}
+        </div>
+        <div class="wizard-param-pair">
+          ${probSlider('ASAT detection penalty against the space layer', 'asatDetectPenalty', asatDetectPenalty, undefined, 0)}
+          ${probSlider('ASAT space-interceptor kill-probability penalty', 'asatSpacePkPenalty', asatSpacePkPenalty, undefined, 0)}
+        </div>
       </div>
-      <div class="wizard-param-pair">
-        ${probSlider('ASAT detection penalty against the space layer', 'asatDetectPenalty', asatDetectPenalty, undefined, 0)}
-        ${probSlider('ASAT space-interceptor kill-probability penalty', 'asatSpacePkPenalty', asatSpacePkPenalty, undefined, 0)}
-      </div>
-      ${probSlider('Boost-phase survivability and evasion', 'boostEvasionPenalty', boostEvade, undefined, 0)}
     </div>
   `;
 }
