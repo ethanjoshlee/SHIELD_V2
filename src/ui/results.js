@@ -333,20 +333,6 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(pkTerminalNuclear, 2)}</span>
         </div>
 
-        <div class="results-input-group-label">System Status</div>
-        <div class="result-item">
-          <span class="label">Blue system operational availability:</span>
-          <span class="value">${fmt(params.pSystemUp, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Detection/tracking degradation when the Blue system fails:</span>
-          <span class="value">${fmt(1 - params.detectDegradeFactor, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Interceptor kill-probability degradation when the Blue system fails:</span>
-          <span class="value">${fmt(1 - params.pkDegradeFactor, 2)}</span>
-        </div>
-
         <div class="results-input-group-label">Model Computation</div>
         <div class="result-item">
           <span class="label">Trials:</span>
@@ -421,17 +407,6 @@ export function renderResultsContent(params, result) {
       </div>
     `;
   }
-
-  // Output-only diagnostic for common-mode uptime realization.
-  html += `
-    <h3>System Status</h3>
-    <div class="results-grid">
-      <div class="result-item">
-        <span class="label">Observed system operational availability:</span>
-        <span class="value">${fmt(s.meanSystemUp, 2)}</span>
-      </div>
-    </div>
-  `;
 
   // Charts
   if (result.penReal && result.penReal.length > 0) {

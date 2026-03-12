@@ -27,7 +27,7 @@ export function computeSummary(arrays, realWarheadsConst, params = {}) {
     detObj, detReal,
     tp, fn, fp,
     shotsTot, shotsW, shotsD,
-    invLeft, systemUpFlags,
+    invLeft,
     boostMissilesKilled = [],
     boostWarheadsDestroyed = [],
     midcourseWarheadsKilled = [],
@@ -35,8 +35,6 @@ export function computeSummary(arrays, realWarheadsConst, params = {}) {
     deliveredKilotons = [],
     ktDelivered = [],
   } = arrays;
-
-  const meanSystemUp = mean(systemUpFlags);
 
   const summary = {
     realWarheads: realWarheadsConst,
@@ -61,7 +59,6 @@ export function computeSummary(arrays, realWarheadsConst, params = {}) {
 
     meanInventoryRemaining: mean(invLeft),
 
-    meanSystemUp,
     meanPenRateReal:
       realWarheadsConst > 0 ? mean(penReal) / realWarheadsConst : 0,
   };

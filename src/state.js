@@ -52,9 +52,6 @@ export const DEFAULTS = {
   asatSpacePkPenalty: 0.0,
   boostEvasionPenalty: 0.0,
   nTrials: 2000,
-  pSystemUp: 0.90,
-  detectDegradeFactor: 0.50,
-  pkDegradeFactor: 0.70,
   seed: null,
 
   // --- Multi-phase params (populated by presets or future UI) ---

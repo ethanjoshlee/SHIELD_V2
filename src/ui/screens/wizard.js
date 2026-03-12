@@ -254,14 +254,6 @@ export function renderWizard(container, transitionFn) {
         probRange.value = (parseFloat(val) * 100).toFixed(1);
         probRange.dispatchEvent(new Event('input', { bubbles: true }));
       }
-      const degradeRange = el.querySelector(`[data-degrade-target="${param}"]`);
-      if (degradeRange) {
-        const factor = parseFloat(val);
-        if (Number.isFinite(factor)) {
-          degradeRange.value = (100 - factor * 100).toFixed(1);
-          degradeRange.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      }
 
       const input = el.querySelector(`[data-param="${param}"]`);
       if (!input) return;
@@ -490,14 +482,6 @@ export function renderWizard(container, transitionFn) {
     const hidden = el.querySelector(`[data-param="${paramId}"]`);
     bindSliderPair(range, (sliderValue) => {
       if (hidden) hidden.value = (sliderValue / 100).toFixed(4);
-    });
-  });
-
-  el.querySelectorAll('[data-degrade-target]').forEach((range) => {
-    const paramId = range.dataset.degradeTarget;
-    const hidden = el.querySelector(`[data-param="${paramId}"]`);
-    bindSliderPair(range, (sliderValue) => {
-      if (hidden) hidden.value = (1 - (sliderValue / 100)).toFixed(4);
     });
   });
 

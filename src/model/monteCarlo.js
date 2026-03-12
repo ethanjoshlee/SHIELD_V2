@@ -30,7 +30,6 @@ export function runMonteCarlo(params) {
   const shotsD = [];
 
   const invLeft = [];
-  const systemUpFlags = [];
 
   // Multi-phase arrays
   const boostMissilesKilled = [];
@@ -61,7 +60,6 @@ export function runMonteCarlo(params) {
     shotsD.push(r.shotsAtDecoys);
 
     invLeft.push(r.inventoryRemaining);
-    systemUpFlags.push(r.systemUp ? 1 : 0);
 
     boostMissilesKilled.push(r.boostMissilesKilled);
     boostWarheadsDestroyed.push(r.boostWarheadsDestroyed);
@@ -82,7 +80,7 @@ export function runMonteCarlo(params) {
       detObj, detReal,
       tp, fn, fp,
       shotsTot, shotsW, shotsD,
-      invLeft, systemUpFlags,
+      invLeft,
       boostMissilesKilled, boostWarheadsDestroyed,
       midcourseWarheadsKilled, terminalWarheadsKilled,
       deliveredKilotons,

@@ -370,10 +370,6 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
 
   const nTrials = Math.max(1, parseInt(getValue("nTrials", "nTrials", 1000), 10) || 1000);
 
-  const pSystemUp = clamp01(parseFloat(getValue("pSystemUp", "pSystemUp", 0.9)) || 0);
-  const detectDegradeFactor = clamp01(parseFloat(getValue("detectDegradeFactor", "detectDegradeFactor", 0.5)) || 0);
-  const pkDegradeFactor = clamp01(parseFloat(getValue("pkDegradeFactor", "pkDegradeFactor", 0.7)) || 0);
-
   const seedVal = (getValue("seed", "seed", "").trim());
   const seed = seedVal === "" ? null : parseInt(seedVal, 10) || 0;
 
@@ -498,9 +494,6 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     asatSpacePkPenalty,
     boostEvasionPenalty,
     nTrials,
-    pSystemUp,
-    detectDegradeFactor,
-    pkDegradeFactor,
     seed,
     blueKey,
     redKey,
@@ -569,19 +562,6 @@ function intSlider(label, param, min, max, step, defaultVal) {
     </div>`;
 }
 
-function degradationSlider(label, param, multiplier, minPct = 0.1) {
-  const m = Math.max(0, Math.min(1, Number(multiplier)));
-  const degradationPct = (1 - m) * 100;
-  return `
-    <div class="wizard-slider-row">
-      <div class="wizard-slider-header">
-        <span class="wizard-slider-label">${label}</span>
-        ${sliderValueInputHTML(label, degradationPct, minPct, 99.9, 0.1, '%')}
-      </div>
-      <input type="range" class="wizard-slider" min="${minPct}" max="99.9" step="0.1" value="${degradationPct.toFixed(1)}" data-degrade-target="${param}" />
-      <input type="number" class="wizard-hidden-param" data-param="${param}" value="${m.toFixed(4)}" tabindex="-1" aria-hidden="true" />
-    </div>`;
-}
 
 /**
  * BLUE step parameters (defender capabilities + engagement doctrine).
@@ -615,9 +595,6 @@ export function blueParamsHTML(d) {
   const boostDirectedTargetsPerPlatform = d.boostDirectedTargetsPerPlatform ?? 2;
   const midcourseDirectedTargetsPerPlatform = d.midcourseDirectedTargetsPerPlatform ?? 3;
   const midcourseSpaceAvailabilityPct = ((d.midcourseSpaceAvailabilityMultiplier ?? 0.30) * 100).toFixed(1);
-  const pSystemUpPct = ((d.pSystemUp ?? 0.9) * 100).toFixed(1);
-  const detectDegradeFactor = d.detectDegradeFactor ?? 0.5;
-  const pkDegradeFactor = d.pkDegradeFactor ?? 0.7;
   const doctrineToggleHTML = (label, param, mode) => `
       <div class="wizard-slider-row">
         <div class="wizard-slider-header">
@@ -652,7 +629,6 @@ export function blueParamsHTML(d) {
       <div class="wizard-tab" data-tab="blue-gbi">Ground-Based Midcourse Interceptors</div>
       <div class="wizard-tab" data-tab="blue-space">Hypothetical Space-Based Interceptors</div>
       <div class="wizard-tab" data-tab="blue-terminal">Hypothetical Terminal Interceptors</div>
-      <div class="wizard-tab" data-tab="blue-system">System Status</div>
     </div>
 
     <!-- Tab 1: Sensing, Tracking & Discrimination -->
@@ -759,16 +735,6 @@ export function blueParamsHTML(d) {
       </div>
     </div>
 
-    <!-- Tab 5: System-Level Assumptions -->
-    <div class="wizard-tab-panel" data-tab-panel="blue-system">
-      <div class="wizard-param-group">
-        ${probSlider('Blue system operational availability', 'pSystemUp', pSystemUpPct)}
-        <div class="wizard-param-pair">
-          ${degradationSlider('Detection/tracking degradation when the Blue system fails', 'detectDegradeFactor', detectDegradeFactor)}
-          ${degradationSlider('Interceptor kill-probability degradation when the Blue system fails', 'pkDegradeFactor', pkDegradeFactor)}
-        </div>
-      </div>
-    </div>
   `;
 }
 
@@ -972,25 +938,6 @@ export function renderDrawerControls(container, blueKey, redKey) {
       </div>
     </div>
 
-    <div class="tab-panel" id="tab-cm">
-      <div class="panel-section">
-        <h4>Common Mode (Reliability)</h4>
-        <div class="param-group">
-          <label>
-            P(System Up):
-            <input type="number" class="param-input" data-param="pSystemUp" min="0" max="1" step="0.01" value="${d.pSystemUp}" />
-          </label>
-          <label>
-            Detect Degrade Factor:
-            <input type="number" class="param-input" data-param="detectDegradeFactor" min="0" max="1" step="0.01" value="${d.detectDegradeFactor}" />
-          </label>
-          <label>
-            Pk Degrade Factor:
-            <input type="number" class="param-input" data-param="pkDegradeFactor" min="0" max="1" step="0.01" value="${d.pkDegradeFactor}" />
-          </label>
-        </div>
-      </div>
-    </div>
 
     <div class="tab-panel" id="tab-sim">
       <div class="panel-section">

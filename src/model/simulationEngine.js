@@ -22,25 +22,7 @@ import { buildBoostScenario, discretizeBoostInventoryByType } from './scenarioLa
 // Trial-level system degradation (common-mode reliability)
 // ---------------------------------------------------------------------------
 
-function applyTrialDegradation(params) {
-  const up = bernoulli(params.pSystemUp);
 
-  if (up) {
-    return {
-      pDetectTrack_trial: params.pDetectTrack,
-      pkDegradeFactor: 1.0,
-      detectDegradeFactor: 1.0,
-      systemUp: true,
-    };
-  }
-
-  return {
-    pDetectTrack_trial: clamp01(params.pDetectTrack * params.detectDegradeFactor),
-    pkDegradeFactor: params.pkDegradeFactor,
-    detectDegradeFactor: params.detectDegradeFactor,
-    systemUp: false,
-  };
-}
 
 const BOOST_TYPES = ["boost_kinetic", "boost_laser"];
 // Midcourse space-based interceptors have broader engagement geometry
@@ -234,10 +216,9 @@ function runLegacyTrial(params) {
   // Neutral compatibility path: preserve existing legacy behavior.
   if (!boostEnabled) {
     const { targets, realWarheads } = generateTargets(params);
-    const d = applyTrialDegradation(params);
 
-    const pDetectTrack = d.pDetectTrack_trial;
-    const pkUnified = clamp01(params.pkWarhead * d.pkDegradeFactor);
+    const pDetectTrack = params.pDetectTrack;
+    const pkUnified = clamp01(params.pkWarhead);
 
     let inventory = params.nInventory;
 
@@ -304,7 +285,6 @@ function runLegacyTrial(params) {
       shotsAtTrueWarheads,
       shotsAtDecoys,
       inventoryRemaining: inventory,
-      systemUp: d.systemUp,
       // Multi-phase fields (zero for legacy)
       boostMissilesEngaged: 0,
       boostMissilesKilled: 0,
@@ -321,13 +301,12 @@ function runLegacyTrial(params) {
     };
   }
 
-  const d = applyTrialDegradation(params);
-  const pDetectTrack = d.pDetectTrack_trial;
+  const pDetectTrack = params.pDetectTrack;
   // Space-layer detection degradation is applied to boost phase only.
   const pDetectTrackBoost = clamp01(
     pDetectTrack * (boostScenario.detectionMultiplier ?? 1)
   );
-  const pkUnified = clamp01(params.pkWarhead * d.pkDegradeFactor);
+  const pkUnified = clamp01(params.pkWarhead);
 
   // Continuous scenario values become discrete pools only at engagement resolution.
   const boostInventoryDiscrete = discretizeBoostInventoryByType(
@@ -336,8 +315,8 @@ function runLegacyTrial(params) {
   const boostKineticInventory = boostInventoryDiscrete.boost_kinetic ?? 0;
   const boostDirectedPlatforms = boostInventoryDiscrete.boost_laser ?? 0;
   const boostDirectedOpportunityPool = boostDirectedPlatforms * boostDirectedTargetsPerPlatform;
-  const boostPkKinetic = clamp01(boostScenario.pkByType.boost_kinetic * d.pkDegradeFactor);
-  const boostPkDirected = clamp01(boostScenario.pkByType.boost_laser * d.pkDegradeFactor);
+  const boostPkKinetic = clamp01(boostScenario.pkByType.boost_kinetic);
+  const boostPkDirected = clamp01(boostScenario.pkByType.boost_laser);
 
   const missiles = [];
   for (let i = 0; i < params.nMissiles; i++) {
@@ -432,7 +411,6 @@ function runLegacyTrial(params) {
     shotsAtTrueWarheads,
     shotsAtDecoys,
     inventoryRemaining: inventory,
-    systemUp: d.systemUp,
     boostMissilesEngaged: boostRes.boostMissilesEngaged,
     boostMissilesKilled: boostRes.boostMissilesKilled,
     boostWarheadsDestroyed: boostRes.boostWarheadsDestroyed,
@@ -453,12 +431,10 @@ function runLegacyTrial(params) {
 // ---------------------------------------------------------------------------
 
 function runMultiPhaseTrial(params) {
-  const d = applyTrialDegradation(params);
-
   // --- ASAT effects ---
   const asatDetectPenalty = params.countermeasures?.asatDetectPenalty ?? 0;
   const asatSpacePkPenalty = params.countermeasures?.asatSpacePkPenalty ?? 0;
-  const pDetectTrack = applyAsatDetectPenalty(d.pDetectTrack_trial, asatDetectPenalty);
+  const pDetectTrack = applyAsatDetectPenalty(params.pDetectTrack, asatDetectPenalty);
   const boostScenario = buildBoostScenario(params);
   // Space-layer detection degradation is applied to boost phase only.
   const pDetectTrackBoost = clamp01(
@@ -503,11 +479,11 @@ function runMultiPhaseTrial(params) {
       inventory[type] = cfg.deployed;
     }
 
-    // Compute effective Pk: base * system-degradation.
+    // Compute effective Pk.
     // ASAT Pk penalty is retained for non-boost space layers.
     const scenarioPk = boostScenario.pkByType[type];
     const basePk = cfg.phase === "boost" && scenarioPk != null ? scenarioPk : cfg.pk;
-    let pk = basePk * d.pkDegradeFactor;
+    let pk = basePk;
     if (isSpaceBased(type) && cfg.phase !== "boost") {
       pk = applyAsatPkPenalty(pk, asatSpacePkPenalty);
     }
@@ -778,7 +754,6 @@ function runMultiPhaseTrial(params) {
     shotsAtTrueWarheads,
     shotsAtDecoys,
     inventoryRemaining: totalInventoryRemaining,
-    systemUp: d.systemUp,
     boostMissilesEngaged,
     boostMissilesKilled,
     boostWarheadsDestroyed,
