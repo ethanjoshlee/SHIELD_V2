@@ -1105,6 +1105,7 @@ input[type="range"]::-moz-range-thumb {
   font-size: 9px;
   line-height: 1.35;
   white-space: pre-line;
+  overflow-wrap: anywhere;
   transform: translateX(-50%);
   opacity: 0;
   visibility: hidden;
