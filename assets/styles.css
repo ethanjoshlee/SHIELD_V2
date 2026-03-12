@@ -829,6 +829,23 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 500;
 }
 
+.results-input-group-label {
+  grid-column: 1 / -1;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.results-input-group-label--first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .results-charts {
   display: flex;
   flex-direction: column;
@@ -1726,6 +1743,26 @@ input[type="range"]::-moz-range-thumb {
   background: var(--accent-red);
 }
 
+/* Sim step (Model Computation) slider color override */
+.step-params[data-step="sim"] input[type="range"]::-webkit-slider-thumb {
+  background: var(--accent-amber);
+}
+
+.step-params[data-step="sim"] input[type="range"]::-moz-range-thumb {
+  background: var(--accent-amber);
+}
+
+/* Wizard explanatory note styling */
+.wizard-note {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+}
+
 .wizard-param-group {
   display: flex;
   flex-direction: column;
@@ -1826,6 +1863,17 @@ input[type="range"]::-moz-range-thumb {
 
 .wizard-nav .btn-run:hover:not(:disabled) {
   background: rgba(0, 212, 255, 0.15);
+}
+
+/* Sim step (Model Computation) button color override */
+.wizard-shell.wizard-step-sim .wizard-nav .btn-run {
+  background: rgba(255, 170, 0, 0.08);
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+}
+
+.wizard-shell.wizard-step-sim .wizard-nav .btn-run:hover:not(:disabled) {
+  background: rgba(255, 170, 0, 0.15);
 }
 
 /* Wizard — country-gating */

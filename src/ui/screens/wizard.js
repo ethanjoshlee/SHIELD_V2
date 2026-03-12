@@ -203,6 +203,7 @@ export function renderWizard(container, transitionFn) {
     el.querySelector('.wizard-title').textContent = step.title;
     el.querySelector('.wizard-subtitle').textContent = step.subtitle;
     el.classList.toggle('wizard-step-sides', isSidesStep);
+    el.classList.toggle('wizard-step-sim', step.key === 'sim');
 
     const paramSections = el.querySelectorAll('.step-params');
     paramSections.forEach((section) => {

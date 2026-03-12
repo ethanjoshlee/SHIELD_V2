@@ -849,11 +849,13 @@ export function simParamsHTML(d) {
   return `
     <div class="wizard-param-group">
       ${intSlider('Monte Carlo trials', 'nTrials', 100, 5000, 100, d.nTrials)}
-      <div class="wizard-slider-row">
+      <div class="wizard-note">2,000 trials is recommended for most analyses. Increase to 5,000 for more precise tail statistics in extreme scenarios: very low intercept probability or heavy decoy loads.</div>
+      <div class="wizard-slider-row" style="margin-top: 12px;">
         <div class="wizard-slider-header">
           <span class="wizard-slider-label">Seed (blank = random)</span>
         </div>
         <input type="text" class="wizard-text-input" data-param="seed" placeholder="auto" value="${d.seed ?? ''}" />
+        <div class="wizard-slider-note">Leave blank for a new random result each run. Enter a number to reproduce the exact same run for verification or debugging.</div>
       </div>
     </div>
   `;

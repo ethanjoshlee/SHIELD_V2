@@ -142,6 +142,8 @@ export function renderResultsContent(params, result) {
     <div class="results-content">
       <h3>Inputs</h3>
       <div class="results-grid">
+
+        <div class="results-input-group-label results-input-group-label--first">Strike Salvo</div>
         <div class="result-item">
           <span class="label">Ballistic missiles:</span>
           <span class="value">${params.nMissiles}</span>
@@ -155,8 +157,8 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(kilotonsPerWarhead, 0)} kt</span>
         </div>
         <div class="result-item">
-          <span class="label">Decoys per missile:</span>
-          <span class="value">${decoysPerMissile.toFixed(1)}</span>
+          <span class="label">Launch region preset:</span>
+          <span class="value">${LAUNCH_REGION_PRESETS[launchRegion]?.label ?? launchRegion}</span>
         </div>
         <div class="result-item">
           <span class="label">Real warheads total:</span>
@@ -166,114 +168,18 @@ export function renderResultsContent(params, result) {
           <span class="label">Total objects:</span>
           <span class="value">${totalObjects}</span>
         </div>
+
+        <div class="results-input-group-label">Penetration Aids</div>
         <div class="result-item">
-          <span class="label">Blue network baseline missile/object detection and tracking probability:</span>
-          <span class="value">${fmt(params.pDetectTrack, 2)}</span>
+          <span class="label">Decoys per missile:</span>
+          <span class="value">${decoysPerMissile.toFixed(1)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Blue system operational availability:</span>
-          <span class="value">${fmt(params.pSystemUp, 2)}</span>
+          <span class="label">Boost-phase survivability and evasion:</span>
+          <span class="value">${fmt(boostEvasionPenalty, 2)}</span>
         </div>
-        <div class="result-item">
-          <span class="label">Detection/tracking degradation when the Blue system fails:</span>
-          <span class="value">${fmt(1 - params.detectDegradeFactor, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Interceptor kill-probability degradation when the Blue system fails:</span>
-          <span class="value">${fmt(1 - params.pkDegradeFactor, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Blue network warhead discrimination accuracy (warhead classified as warhead):</span>
-          <span class="value">${fmt(params.pClassifyWarhead, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Blue network discrimination false-alarm rate (decoy misclassified as warhead):</span>
-          <span class="value">${fmt(params.pFalseAlarmDecoy, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Discrimination note:</span>
-          <span class="value">These sensing/discrimination assumptions are modeled as global Blue network inputs upstream of engagement. Midcourse outcomes are especially sensitive to warhead/decoy discrimination quality.</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Ground-based kinetic midcourse doctrine:</span>
-          <span class="value">${midcourseDoctrineLine}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical space-based kinetic boost engagement doctrine:</span>
-          <span class="value">${boostKineticDoctrineLine}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Ground-based midcourse interceptors in engagement range (existing U.S. architecture):</span>
-          <span class="value">${params.nInventory}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Ground-based midcourse interceptor kill probability:</span>
-          <span class="value">${fmt(params.pkWarhead, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical space-based kinetic boost interceptors in orbit:</span>
-          <span class="value">${nSpaceBoostKinetic}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical space-based kinetic boost interceptor kill probability:</span>
-          <span class="value">${fmt(pkSpaceBoostKinetic, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical space-based directed-energy interceptor platforms in orbit:</span>
-          <span class="value">${nSpaceBoostDirected}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical space-based directed-energy boost interceptor kill probability:</span>
-          <span class="value">${fmt(pkSpaceBoostDirected, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical space-based kinetic midcourse interceptors in orbit:</span>
-          <span class="value">${nMidcourseSpaceKinetic}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical space-based kinetic midcourse interceptor kill probability:</span>
-          <span class="value">${fmt(pkMidcourseSpaceKinetic, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical space-based directed-energy midcourse interceptor platforms in orbit:</span>
-          <span class="value">${nMidcourseSpaceLaser}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical space-based directed-energy midcourse interceptor kill probability:</span>
-          <span class="value">${fmt(pkMidcourseSpaceLaser, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical ground-based terminal kinetic interceptors in engagement range:</span>
-          <span class="value">${nTerminalKinetic}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical ground-based terminal kinetic interceptor kill probability:</span>
-          <span class="value">${fmt(pkTerminalKinetic, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical ground-based terminal nuclear interceptors in engagement range:</span>
-          <span class="value">${nTerminalNuclear}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Hypothetical ground-based terminal nuclear interceptor kill probability:</span>
-          <span class="value">${fmt(pkTerminalNuclear, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Boost-phase directed-energy engagement opportunities per hypothetical orbital platform (aggregated capacity assumption):</span>
-          <span class="value">${boostDirectedTargetsPerPlatform}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Boost DE capacity note:</span>
-          <span class="value">Boost directed-energy opportunities per platform are modeled as a reduced-form capacity assumption, not an explicit timeline simulation of boost-window timing, dwell, slew/retarget, or handoff dynamics.</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Directed-energy midcourse engagement opportunities per hypothetical orbital platform:</span>
-          <span class="value">${midcourseDirectedTargetsPerPlatform}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Launch region preset:</span>
-          <span class="value">${LAUNCH_REGION_PRESETS[launchRegion]?.label ?? launchRegion}</span>
-        </div>
+
+        <div class="results-input-group-label">Counterspace Attack</div>
         <div class="result-item">
           <span class="label">Cyber / EW disruption effectiveness against the space layer:</span>
           <span class="value">${fmt(pAsatCyberEffect, 2)}</span>
@@ -295,12 +201,106 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(pAsatNuclearEffect, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Space-based boost interceptor availability multiplier:</span>
-          <span class="value">${fmt(availabilityMultiplier, 2)}</span>
+          <span class="label">ASAT detection penalty:</span>
+          <span class="value">${fmt(asatDetectPenalty, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Midcourse space interceptor availability multiplier:</span>
+          <span class="label">ASAT space-interceptor kill-probability penalty:</span>
+          <span class="value">${fmt(asatSpacePkPenalty, 2)}</span>
+        </div>
+
+        <div class="results-input-group-label">Sensors and Detection</div>
+        <div class="result-item">
+          <span class="label">Blue network baseline missile/object detection and tracking probability:</span>
+          <span class="value">${fmt(params.pDetectTrack, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Blue network warhead discrimination accuracy (warhead classified as warhead):</span>
+          <span class="value">${fmt(params.pClassifyWarhead, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Blue network discrimination false-alarm rate (decoy misclassified as warhead):</span>
+          <span class="value">${fmt(params.pFalseAlarmDecoy, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Discrimination note:</span>
+          <span class="value">These global Blue sensing/tracking/discrimination assumptions are upstream of interceptor engagement. Midcourse outcomes are especially sensitive to warhead/decoy discrimination quality.</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Boost-phase detection/tracking multiplier:</span>
+          <span class="value">${fmt(detectionMultiplier, 2)}</span>
+        </div>
+
+        <div class="results-input-group-label">Ground-Based Midcourse Interceptors</div>
+        <div class="result-item">
+          <span class="label">Existing ground-based midcourse interceptors in engagement range:</span>
+          <span class="value">${params.nInventory}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Ground-based midcourse interceptor kill probability:</span>
+          <span class="value">${fmt(params.pkWarhead, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Ground-based kinetic midcourse doctrine:</span>
+          <span class="value">${midcourseDoctrineLine}</span>
+        </div>
+
+        <div class="results-input-group-label">Hypothetical Space-Based Interceptors</div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based kinetic boost interceptors in orbit:</span>
+          <span class="value">${nSpaceBoostKinetic}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based kinetic boost interceptor kill probability:</span>
+          <span class="value">${fmt(pkSpaceBoostKinetic, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based directed-energy interceptor platforms in orbit:</span>
+          <span class="value">${nSpaceBoostDirected}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based directed-energy boost interceptor kill probability:</span>
+          <span class="value">${fmt(pkSpaceBoostDirected, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Boost-phase directed-energy engagement opportunities per hypothetical orbital platform (aggregated capacity assumption):</span>
+          <span class="value">${boostDirectedTargetsPerPlatform}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Boost directed-energy capacity note:</span>
+          <span class="value">Boost directed-energy opportunities per platform are modeled as a reduced-form capacity assumption, not an explicit timeline simulation of boost-window timing, dwell, slew/retarget, or handoff dynamics.</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based kinetic boost engagement doctrine:</span>
+          <span class="value">${boostKineticDoctrineLine}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based kinetic midcourse interceptors in orbit:</span>
+          <span class="value">${nMidcourseSpaceKinetic}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based kinetic midcourse interceptor kill probability:</span>
+          <span class="value">${fmt(pkMidcourseSpaceKinetic, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based directed-energy midcourse interceptor platforms in orbit:</span>
+          <span class="value">${nMidcourseSpaceLaser}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Hypothetical space-based directed-energy midcourse interceptor kill probability:</span>
+          <span class="value">${fmt(pkMidcourseSpaceLaser, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Directed-energy midcourse engagement opportunities per hypothetical orbital platform:</span>
+          <span class="value">${midcourseDirectedTargetsPerPlatform}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Midcourse space interceptor availability (fraction of constellation able to engage):</span>
           <span class="value">${fmt(midcourseSpaceAvailabilityMultiplier, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Space-layer constellation availability note:</span>
+          <span class="value">Space interceptor availability accounts for orbital geometry limits. Only a fraction of deployed satellites can engage a given trajectory during the midcourse phase.</span>
         </div>
         <div class="result-item">
           <span class="label">Deployed midcourse space interceptors:</span>
@@ -311,29 +311,48 @@ export function renderResultsContent(params, result) {
           <span class="value">${effectiveMidcourseSpaceInterceptorsAvailable}</span>
         </div>
         <div class="result-item">
-          <span class="label">Space-layer availability note:</span>
-          <span class="value">Space interceptor availability accounts for orbital geometry limits. Only a fraction of deployed satellites can engage a given trajectory during the midcourse phase.</span>
+          <span class="label">Space-based boost interceptor availability multiplier:</span>
+          <span class="value">${fmt(availabilityMultiplier, 2)}</span>
+        </div>
+
+        <div class="results-input-group-label">Hypothetical Terminal Interceptors</div>
+        <div class="result-item">
+          <span class="label">Hypothetical ground-based terminal kinetic interceptors in engagement range:</span>
+          <span class="value">${nTerminalKinetic}</span>
         </div>
         <div class="result-item">
-          <span class="label">Boost-phase detection/tracking multiplier:</span>
-          <span class="value">${fmt(detectionMultiplier, 2)}</span>
+          <span class="label">Hypothetical ground-based terminal kinetic interceptor kill probability:</span>
+          <span class="value">${fmt(pkTerminalKinetic, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">ASAT detection penalty:</span>
-          <span class="value">${fmt(asatDetectPenalty, 2)}</span>
+          <span class="label">Hypothetical ground-based terminal nuclear interceptors in engagement range:</span>
+          <span class="value">${nTerminalNuclear}</span>
         </div>
         <div class="result-item">
-          <span class="label">ASAT space-interceptor kill-probability penalty:</span>
-          <span class="value">${fmt(asatSpacePkPenalty, 2)}</span>
+          <span class="label">Hypothetical ground-based terminal nuclear interceptor kill probability:</span>
+          <span class="value">${fmt(pkTerminalNuclear, 2)}</span>
+        </div>
+
+        <div class="results-input-group-label">System Status</div>
+        <div class="result-item">
+          <span class="label">Blue system operational availability:</span>
+          <span class="value">${fmt(params.pSystemUp, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Boost-phase survivability and evasion:</span>
-          <span class="value">${fmt(boostEvasionPenalty, 2)}</span>
+          <span class="label">Detection/tracking degradation when the Blue system fails:</span>
+          <span class="value">${fmt(1 - params.detectDegradeFactor, 2)}</span>
         </div>
+        <div class="result-item">
+          <span class="label">Interceptor kill-probability degradation when the Blue system fails:</span>
+          <span class="value">${fmt(1 - params.pkDegradeFactor, 2)}</span>
+        </div>
+
+        <div class="results-input-group-label">Model Computation</div>
         <div class="result-item">
           <span class="label">Trials:</span>
           <span class="value">${params.nTrials}</span>
         </div>
+
       </div>
 
       <h3>Key Outputs</h3>
@@ -405,10 +424,10 @@ export function renderResultsContent(params, result) {
 
   // Output-only diagnostic for common-mode uptime realization.
   html += `
-    <h3>System Diagnostics</h3>
+    <h3>System Status</h3>
     <div class="results-grid">
       <div class="result-item">
-        <span class="label">Observed Blue system operational rate:</span>
+        <span class="label">Observed system operational availability:</span>
         <span class="value">${fmt(s.meanSystemUp, 2)}</span>
       </div>
     </div>
