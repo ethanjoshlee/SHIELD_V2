@@ -849,7 +849,7 @@ export function simParamsHTML(d) {
   return `
     <div class="wizard-param-group">
       ${intSlider('Monte Carlo trials', 'nTrials', 100, 5000, 100, d.nTrials)}
-      <div class="wizard-note">2,000 trials is recommended for most analyses. Increase to 5,000 for more precise tail statistics in extreme scenarios: very low intercept probability or heavy decoy loads.</div>
+      <div class="wizard-note">2,000 trials is recommended for most analyses. Increasing to 5,000 can improve the precision of tail statistics in more extreme scenarios, such as when assuming very low intercept probabilities or large numbers of warhead decoys.</div>
       <div class="wizard-slider-row" style="margin-top: 12px;">
         <div class="wizard-slider-header">
           <span class="wizard-slider-label">Seed (blank = random)</span>

@@ -19,7 +19,7 @@ import { blueParamsHTML, redParamsHTML, simParamsHTML, readParamsFromUI } from '
 
 const STEPS = [
   { key: 'sides', title: '', subtitle: '', number: '01 / 04' },
-  { key: 'blue', title: 'CONFIGURE BLUE', subtitle: 'Defense capabilities and parameters', number: '02 / 04' },
+  { key: 'blue', title: 'CONFIGURE BLUE', subtitle: 'Baseline defense capabilities and parameters', number: '02 / 04' },
   { key: 'red',  title: 'CONFIGURE RED', subtitle: 'Attack capabilities and parameters', number: '03 / 04' },
   { key: 'sim',  title: 'MODEL COMPUTATION', subtitle: 'Trial settings and model parameters', number: '04 / 04' },
 ];
