@@ -633,14 +633,47 @@ export function blueParamsHTML(d) {
 
     <!-- Tab 1: Sensing, Tracking & Discrimination -->
     <div class="wizard-tab-panel active" data-tab-panel="blue-sensing">
-      <div class="wizard-param-group">
-        <div class="wizard-param-pair">
-          ${probSlider('Blue network baseline missile/object detection and tracking probability', 'pDetectTrack', pdt)}
-          ${probSlider('Blue network warhead discrimination accuracy (warhead classified as warhead)', 'pClassifyWarhead', pcw)}
+      <div class="wizard-param-group wizard-param-group--sensing">
+        <div class="wizard-control-stack">
+          <div class="wizard-slider-row">
+            <div class="wizard-slider-header">
+              <span class="wizard-slider-label">Detection and tracking probability</span>
+              ${sliderValueInputHTML('Detection and tracking probability', pdt, 0.1, 99.9, 0.1, '%')}
+            </div>
+            <input type="range" class="wizard-slider" min="0.1" max="99.9" step="0.1" value="${pdt}" data-prob-target="pDetectTrack" />
+            <input type="number" class="wizard-hidden-param" data-param="pDetectTrack" value="${(Number(pdt) / 100).toFixed(4)}" tabindex="-1" aria-hidden="true" />
+          </div>
+          <div class="wizard-slider-note wizard-control-explanation">
+            Probability that an incoming missile or object is detected and tracked for engagement.
+          </div>
         </div>
-        ${probSlider('Blue network discrimination false-alarm rate (decoy misclassified as warhead)', 'pFalseAlarmDecoy', pfa)}
-        <div class="wizard-slider-note">
-          These global Blue sensing/tracking/discrimination assumptions are upstream of interceptor engagement. Midcourse outcomes are especially sensitive to warhead/decoy discrimination quality.
+
+        <div class="wizard-control-stack">
+          <div class="wizard-slider-row">
+            <div class="wizard-slider-header">
+              <span class="wizard-slider-label">Warhead discrimination accuracy</span>
+              ${sliderValueInputHTML('Warhead discrimination accuracy', pcw, 0.1, 99.9, 0.1, '%')}
+            </div>
+            <input type="range" class="wizard-slider" min="0.1" max="99.9" step="0.1" value="${pcw}" data-prob-target="pClassifyWarhead" />
+            <input type="number" class="wizard-hidden-param" data-param="pClassifyWarhead" value="${(Number(pcw) / 100).toFixed(4)}" tabindex="-1" aria-hidden="true" />
+          </div>
+          <div class="wizard-slider-note wizard-control-explanation">
+            Probability that a real warhead is correctly identified as a real warhead for interception.
+          </div>
+        </div>
+
+        <div class="wizard-control-stack">
+          <div class="wizard-slider-row">
+            <div class="wizard-slider-header">
+              <span class="wizard-slider-label">Decoy false-alarm rate</span>
+              ${sliderValueInputHTML('Decoy false-alarm rate', pfa, 0.1, 99.9, 0.1, '%')}
+            </div>
+            <input type="range" class="wizard-slider" min="0.1" max="99.9" step="0.1" value="${pfa}" data-prob-target="pFalseAlarmDecoy" />
+            <input type="number" class="wizard-hidden-param" data-param="pFalseAlarmDecoy" value="${(Number(pfa) / 100).toFixed(4)}" tabindex="-1" aria-hidden="true" />
+          </div>
+          <div class="wizard-slider-note wizard-control-explanation">
+            Probability that a decoy is mistakenly identified as a real warhead for interception.
+          </div>
         </div>
       </div>
     </div>

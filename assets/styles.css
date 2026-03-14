@@ -1769,6 +1769,27 @@ input[type="range"]::-moz-range-thumb {
   gap: var(--wizard-space-group);
 }
 
+.wizard-param-group--sensing {
+  gap: 0;
+}
+
+.wizard-param-group--sensing .wizard-slider-row {
+  gap: 6px;
+}
+
+.wizard-section-note {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.wizard-param-group--sensing .wizard-control-stack + .wizard-control-stack {
+  margin-top: 22px;
+}
+
+.wizard-param-group--sensing .wizard-control-explanation {
+  margin-top: 6px;
+}
+
 .wizard-param-group h5 {
   margin: var(--wizard-space-group) 0 8px 0;
   font-size: 11px;

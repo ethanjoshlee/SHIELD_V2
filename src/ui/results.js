@@ -211,15 +211,15 @@ export function renderResultsContent(params, result) {
 
         <div class="results-input-group-label">Sensors and Detection</div>
         <div class="result-item">
-          <span class="label">Blue network baseline missile/object detection and tracking probability:</span>
+          <span class="label">Detection and tracking probability:</span>
           <span class="value">${fmt(params.pDetectTrack, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Blue network warhead discrimination accuracy (warhead classified as warhead):</span>
+          <span class="label">Warhead discrimination accuracy:</span>
           <span class="value">${fmt(params.pClassifyWarhead, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Blue network discrimination false-alarm rate (decoy misclassified as warhead):</span>
+          <span class="label">Decoy false-alarm rate:</span>
           <span class="value">${fmt(params.pFalseAlarmDecoy, 2)}</span>
         </div>
         <div class="result-item">
