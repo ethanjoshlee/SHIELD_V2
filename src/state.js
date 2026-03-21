@@ -39,6 +39,7 @@ export const DEFAULTS = {
   pkTerminalKinetic: 0.80,
   nTerminalNuclear: 0,
   pkTerminalNuclear: 0.95,
+  terminalShotsPerTarget: 2,
   boostDirectedTargetsPerPlatform: 2,
   midcourseDirectedTargetsPerPlatform: 3,
   midcourseSpaceAvailabilityMultiplier: 0.30,

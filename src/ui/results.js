@@ -75,7 +75,7 @@ export function renderResultsContent(params, result) {
 
   const formatDoctrineLine = (mode, shots, maxShots, pReengage) =>
     mode === "barrage"
-      ? `Barrage, ${shots} shots per detected/tracked target`
+      ? `Barrage, ${shots} shots per detected/tracked target (committed salvo)`
       : `SLS, max ${maxShots} shots per detected/tracked target, P(re-engage)=${fmt(pReengage, 2)}`;
 
   const midcourseKineticDoctrineMode = params.midcourseKineticDoctrineMode ?? params.doctrineMode ?? "barrage";
@@ -112,6 +112,7 @@ export function renderResultsContent(params, result) {
   const pkTerminalKinetic = params.pkTerminalKinetic ?? params.interceptors?.terminal_kinetic?.pk ?? 0;
   const nTerminalNuclear = params.nTerminalNuclear ?? params.interceptors?.terminal_nuclear?.deployed ?? 0;
   const pkTerminalNuclear = params.pkTerminalNuclear ?? params.interceptors?.terminal_nuclear?.pk ?? 0;
+  const terminalShotsPerTarget = Math.max(1, params.terminalShotsPerTarget ?? 2);
   const boostDirectedTargetsPerPlatform = params.boostDirectedTargetsPerPlatform ?? 2;
   const midcourseDirectedTargetsPerPlatform = params.midcourseDirectedTargetsPerPlatform ?? 3;
   const midcourseSpaceAvailabilityMultiplier =
@@ -295,6 +296,10 @@ export function renderResultsContent(params, result) {
           <span class="value">${midcourseDirectedTargetsPerPlatform}</span>
         </div>
         <div class="result-item">
+          <span class="label">Midcourse directed-energy capacity note:</span>
+          <span class="value">Midcourse directed-energy opportunities per platform are modeled as a reduced-form capacity assumption, not an explicit simulation of dwell time, slew/retarget, or handoff dynamics.</span>
+        </div>
+        <div class="result-item">
           <span class="label">Midcourse space interceptor availability (fraction of constellation able to engage):</span>
           <span class="value">${fmt(midcourseSpaceAvailabilityMultiplier, 2)}</span>
         </div>
@@ -331,6 +336,10 @@ export function renderResultsContent(params, result) {
         <div class="result-item">
           <span class="label">Hypothetical ground-based terminal nuclear interceptor kill probability:</span>
           <span class="value">${fmt(pkTerminalNuclear, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Terminal engagement doctrine:</span>
+          <span class="value">Barrage, ${terminalShotsPerTarget} shots per target</span>
         </div>
 
         <div class="results-input-group-label">Model Computation</div>

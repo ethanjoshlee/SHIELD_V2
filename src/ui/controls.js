@@ -244,6 +244,16 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
       )
     ) || 0
   );
+  const terminalShotsPerTarget = Math.min(
+    4,
+    Math.max(
+      1,
+      parseInt(
+        getValue("terminalShotsPerTarget", "terminalShotsPerTarget", 2),
+        10
+      ) || 2
+    )
+  );
   const boostDirectedTargetsPerPlatform = Math.min(
     9,
     Math.max(
@@ -481,6 +491,7 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     pkTerminalKinetic,
     nTerminalNuclear,
     pkTerminalNuclear,
+    terminalShotsPerTarget,
     boostDirectedTargetsPerPlatform,
     midcourseDirectedTargetsPerPlatform,
     midcourseSpaceAvailabilityMultiplier,
@@ -592,6 +603,7 @@ export function blueParamsHTML(d) {
   const pkTerminalKinetic = ((d.pkTerminalKinetic ?? d.interceptors?.terminal_kinetic?.pk ?? 0.8) * 100).toFixed(1);
   const nTerminalNuclear = d.nTerminalNuclear ?? d.interceptors?.terminal_nuclear?.deployed ?? 0;
   const pkTerminalNuclear = ((d.pkTerminalNuclear ?? d.interceptors?.terminal_nuclear?.pk ?? 0.95) * 100).toFixed(1);
+  const terminalShotsPerTarget = d.terminalShotsPerTarget ?? 2;
   const boostDirectedTargetsPerPlatform = d.boostDirectedTargetsPerPlatform ?? 2;
   const midcourseDirectedTargetsPerPlatform = d.midcourseDirectedTargetsPerPlatform ?? 3;
   const midcourseSpaceAvailabilityPct = ((d.midcourseSpaceAvailabilityMultiplier ?? 0.30) * 100).toFixed(1);
@@ -762,8 +774,9 @@ export function blueParamsHTML(d) {
           ${intSlider('Hypothetical ground-based terminal nuclear interceptors in engagement range', 'nTerminalNuclear', 0, 4000, 1, nTerminalNuclear)}
           ${probSlider('Hypothetical ground-based terminal nuclear interceptor kill probability', 'pkTerminalNuclear', pkTerminalNuclear)}
         </div>
+        ${intSlider('Terminal interceptor shots per target (barrage)', 'terminalShotsPerTarget', 1, 4, 1, terminalShotsPerTarget)}
         <div class="wizard-slider-note">
-          Terminal interceptors engage reentering warheads only. Lightweight exoatmospheric decoys are assumed not to survive reentry into the terminal engagement regime.
+          Terminal interceptors engage reentering warheads only. Lightweight exoatmospheric decoys are assumed not to survive reentry into the terminal engagement regime. Terminal engagements use a committed barrage doctrine: all allocated shots are expended per target with no SLS re-engagement step.
         </div>
       </div>
     </div>
@@ -1013,6 +1026,10 @@ export function renderDrawerControls(container, blueKey, redKey) {
           <label>
             Hypothetical space-based kinetic boost P(re-engage):
             <input type="number" class="param-input" data-param="boostKineticPReengage" min="0" max="1" step="0.01" value="${d.boostKineticPReengage ?? d.pReengage}" />
+          </label>
+          <label>
+            Hypothetical terminal kinetic/nuclear shots per target (barrage):
+            <input type="number" class="param-input" data-param="terminalShotsPerTarget" min="1" max="4" step="1" value="${d.terminalShotsPerTarget ?? 2}" />
           </label>
           <label>
             Monte Carlo Trials:

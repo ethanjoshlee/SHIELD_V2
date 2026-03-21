@@ -492,7 +492,13 @@ function runMultiPhaseTrial(params) {
 
   const midcourseKineticDoctrine = kineticDoctrineParamsFrom(params, 'midcourseKinetic');
   const boostKineticDoctrine = kineticDoctrineParamsFrom(params, 'boostKinetic');
-  const terminalDoctrine = midcourseKineticDoctrine;
+  const terminalShotsPerTarget = Math.max(1, params.terminalShotsPerTarget ?? 2);
+  const terminalDoctrine = {
+    doctrineMode: 'barrage',
+    shotsPerTarget: terminalShotsPerTarget,
+    maxShotsPerTarget: terminalShotsPerTarget, // unused in barrage mode
+    pReengage: 0,                              // unused in barrage mode
+  };
   const kilotonsPerWarhead = kilotonsPerWarheadFrom(params);
 
   // Stats

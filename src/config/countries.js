@@ -67,6 +67,7 @@ export const COUNTRIES = {
       shotsPerTarget: 2,
       maxShotsPerTarget: 4,
       pReengage: 0.85,
+      terminalShotsPerTarget: 2,
       nSpaceBoostKinetic: 0,
       pkSpaceBoostKinetic: 0.50,
       nSpaceBoostDirected: 0,
