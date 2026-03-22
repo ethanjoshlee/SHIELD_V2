@@ -434,12 +434,16 @@ function runMultiPhaseTrial(params) {
   // --- ASAT effects ---
   const asatDetectPenalty = params.countermeasures?.asatDetectPenalty ?? 0;
   const asatSpacePkPenalty = params.countermeasures?.asatSpacePkPenalty ?? 0;
+  const midcourseInterceptionPenalty = params.midcourseInterceptionPenalty ?? 0;
+  const terminalInterceptionPenalty = params.terminalInterceptionPenalty ?? 0;
   const pDetectTrack = applyAsatDetectPenalty(params.pDetectTrack, asatDetectPenalty);
   const boostScenario = buildBoostScenario(params);
   // Space-layer detection degradation is applied to boost phase only.
   const pDetectTrackBoost = clamp01(
     pDetectTrack * (boostScenario.detectionMultiplier ?? 1)
   );
+  // Terminal detection uses ground-based radars (UEWR, TPY-2) which are unaffected by space-layer ASAT.
+  const pDetectTrackTerminal = params.pDetectTrack;
   const boostDirectedTargetsPerPlatform = directedTargetsPerPlatformFrom(params);
   const midcourseDirectedTargetsPerPlatform = midcourseDirectedTargetsPerPlatformFrom(params);
   const midcourseSpaceAvailabilityMultiplier = midcourseSpaceAvailabilityMultiplierFrom(params);
@@ -486,6 +490,9 @@ function runMultiPhaseTrial(params) {
     let pk = basePk;
     if (isSpaceBased(type) && cfg.phase !== "boost") {
       pk = applyAsatPkPenalty(pk, asatSpacePkPenalty);
+    }
+    if (cfg.phase === "terminal") {
+      pk = clamp01(pk * (1 - terminalInterceptionPenalty));
     }
     effectivePk[type] = clamp01(pk);
   }
@@ -631,8 +638,8 @@ function runMultiPhaseTrial(params) {
     detectedObjects++;
     if (tgt.kind === "warhead") detectedRealWarheads++;
 
-    // Classification
-    const classifiedAsWarhead = classifyTarget(tgt, params);
+    // Classification — midcourse discrimination degraded by midcourseInterceptionPenalty.
+    const classifiedAsWarhead = classifyTarget(tgt, { ...params, pClassifyWarhead: clamp01(params.pClassifyWarhead * (1 - midcourseInterceptionPenalty)) });
 
     if (tgt.kind === "warhead") {
       if (classifiedAsWarhead) truePositives++;
@@ -702,8 +709,8 @@ function runMultiPhaseTrial(params) {
   );
 
   for (const wh of survivingWarheads) {
-    // Terminal detection (may be re-detected; use same probability)
-    const detected = bernoulli(pDetectTrack);
+    // Terminal detection uses ground-based radars; unaffected by space-layer ASAT.
+    const detected = bernoulli(pDetectTrackTerminal);
     if (!detected) {
       penetratedRealWarheads++;
       continue;

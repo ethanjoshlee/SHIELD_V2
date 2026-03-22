@@ -52,6 +52,8 @@ export const DEFAULTS = {
   asatDetectPenalty: 0.0,
   asatSpacePkPenalty: 0.0,
   boostEvasionPenalty: 0.0,
+  midcourseInterceptionPenalty: 0,
+  terminalInterceptionPenalty: 0,
   nTrials: 2000,
   seed: null,
 

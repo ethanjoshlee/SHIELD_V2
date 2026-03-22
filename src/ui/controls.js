@@ -377,6 +377,24 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
       )
     ) || 0
   );
+  const midcourseInterceptionPenalty = clamp01(
+    parseFloat(
+      getValue(
+        "midcourseInterceptionPenalty",
+        "midcourseInterceptionPenalty",
+        redPreset?.midcourseInterceptionPenalty ?? 0
+      )
+    ) || 0
+  );
+  const terminalInterceptionPenalty = clamp01(
+    parseFloat(
+      getValue(
+        "terminalInterceptionPenalty",
+        "terminalInterceptionPenalty",
+        redPreset?.terminalInterceptionPenalty ?? 0
+      )
+    ) || 0
+  );
 
   const nTrials = Math.max(1, parseInt(getValue("nTrials", "nTrials", 1000), 10) || 1000);
 
@@ -504,6 +522,8 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     asatDetectPenalty,
     asatSpacePkPenalty,
     boostEvasionPenalty,
+    midcourseInterceptionPenalty,
+    terminalInterceptionPenalty,
     nTrials,
     seed,
     blueKey,
@@ -797,6 +817,8 @@ export function redParamsHTML(d) {
   const asatDetectPenalty = ((d.asatDetectPenalty ?? d.countermeasures?.asatDetectPenalty ?? 0) * 100).toFixed(1);
   const asatSpacePkPenalty = ((d.asatSpacePkPenalty ?? d.countermeasures?.asatSpacePkPenalty ?? 0) * 100).toFixed(1);
   const boostEvade = ((d.boostEvasionPenalty ?? 0) * 100).toFixed(1);
+  const midcourseIntercept = ((d.midcourseInterceptionPenalty ?? 0) * 100).toFixed(1);
+  const terminalIntercept = ((d.terminalInterceptionPenalty ?? 0) * 100).toFixed(1);
   const launchRegion = d.launchRegion ?? 'default';
   return `
     <div class="wizard-tab-strip" data-tab-group="red">
@@ -829,25 +851,30 @@ export function redParamsHTML(d) {
       <div class="wizard-param-group">
         ${intSlider('Decoys per missile', 'decoysPerMissile', 0, 40, 1, decoysPerMissile)}
         ${probSlider('Boost-phase survivability and evasion', 'boostEvasionPenalty', boostEvade, undefined, 0)}
+        ${probSlider('Midcourse discrimination and allocation penalty', 'midcourseInterceptionPenalty', midcourseIntercept, undefined, 0)}
+        ${probSlider('Terminal interception effectiveness penalty', 'terminalInterceptionPenalty', terminalIntercept, undefined, 0)}
       </div>
     </div>
 
     <!-- Tab 3: Counterspace -->
     <div class="wizard-tab-panel" data-tab-panel="red-counterspace">
       <div class="wizard-param-group">
+        <div class="wizard-note">The parameters below flow through two separate systems. Cyber, hit-to-kill, and nuclear ASAT effects are processed by the scenario layer and affect space-based interceptor availability and boost-phase detection. The detection and Pk penalty sliders below are independent direct overrides. Using both simultaneously compounds the effects — avoid unless intentionally modeling stacked degradation.</div>
         ${probSlider('Cyber / EW disruption effectiveness against the space layer', 'pAsatCyberEffect', asatCyber)}
         <div class="wizard-param-pair">
           ${intSlider('Direct-ascent hit-to-kill ASAT attempts', 'nAsatHitToKill', 0, 1000, 1, d.nAsatHitToKill ?? 24)}
           ${probSlider('Direct-ascent hit-to-kill ASAT effectiveness', 'pAsatHitToKill', asatHitToKillPk)}
         </div>
+        <div class="wizard-note">Hit-to-kill effectiveness uses an independent-trials formula: cumulative Pk = 1−(1−p)^N. At N=24, p=0.40: ≈99.99% expected space-layer degradation. Verify that your N and p inputs reflect the intended level of constellation destruction.</div>
         <div class="wizard-param-pair">
           ${intSlider('Nuclear direct-ascent ASAT attacks', 'nAsatNuclear', 0, 1000, 1, d.nAsatNuclear ?? 0)}
           ${probSlider('Nuclear direct-ascent ASAT effectiveness', 'pAsatNuclearEffect', asatNuclearPk)}
         </div>
         <div class="wizard-param-pair">
-          ${probSlider('ASAT detection penalty against the space layer', 'asatDetectPenalty', asatDetectPenalty, undefined, 0)}
+          ${probSlider('Battle-network detection and cueing degradation penalty', 'asatDetectPenalty', asatDetectPenalty, undefined, 0)}
           ${probSlider('ASAT space-interceptor kill-probability penalty', 'asatSpacePkPenalty', asatSpacePkPenalty, undefined, 0)}
         </div>
+        <div class="wizard-note">The detection degradation penalty applies to boost and midcourse phase detection (space-based sensors and cueing). Terminal detection (ground-based radars: UEWR, TPY-2) is modeled separately and is not affected by space-layer ASAT.</div>
       </div>
     </div>
   `;

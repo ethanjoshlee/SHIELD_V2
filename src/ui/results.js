@@ -134,6 +134,8 @@ export function renderResultsContent(params, result) {
   const asatDetectPenalty = params.asatDetectPenalty ?? params.countermeasures?.asatDetectPenalty ?? 0;
   const asatSpacePkPenalty = params.asatSpacePkPenalty ?? params.countermeasures?.asatSpacePkPenalty ?? 0;
   const boostEvasionPenalty = params.boostEvasionPenalty ?? 0;
+  const midcourseInterceptionPenalty = params.midcourseInterceptionPenalty ?? 0;
+  const terminalInterceptionPenalty = params.terminalInterceptionPenalty ?? 0;
   const meanDeliveredKilotons = s.meanDeliveredKilotons ?? s.meanKtDelivered ?? 0;
   const p10DeliveredKilotons = s.p10DeliveredKilotons ?? s.p10KtDelivered ?? 0;
   const medianDeliveredKilotons = s.medianDeliveredKilotons ?? s.medianKtDelivered ?? 0;
@@ -179,6 +181,14 @@ export function renderResultsContent(params, result) {
           <span class="label">Boost-phase survivability and evasion:</span>
           <span class="value">${fmt(boostEvasionPenalty, 2)}</span>
         </div>
+        <div class="result-item">
+          <span class="label">Midcourse discrimination and allocation penalty:</span>
+          <span class="value">${fmt(midcourseInterceptionPenalty, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Terminal interception effectiveness penalty:</span>
+          <span class="value">${fmt(terminalInterceptionPenalty, 2)}</span>
+        </div>
 
         <div class="results-input-group-label">Counterspace Attack</div>
         <div class="result-item">
@@ -202,7 +212,7 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(pAsatNuclearEffect, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">ASAT detection penalty:</span>
+          <span class="label">Battle-network detection and cueing degradation penalty:</span>
           <span class="value">${fmt(asatDetectPenalty, 2)}</span>
         </div>
         <div class="result-item">
@@ -228,8 +238,20 @@ export function renderResultsContent(params, result) {
           <span class="value">These global Blue sensing/tracking/discrimination assumptions are upstream of interceptor engagement. Midcourse outcomes are especially sensitive to warhead/decoy discrimination quality.</span>
         </div>
         <div class="result-item">
-          <span class="label">Boost-phase detection/tracking multiplier:</span>
+          <span class="label">Boost-phase detection/tracking multiplier (scenario-layer ASAT effect):</span>
           <span class="value">${fmt(detectionMultiplier, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Effective boost-phase detection probability (base × ASAT penalty × scenario multiplier):</span>
+          <span class="value">${fmt(params.pDetectTrack * (1 - asatDetectPenalty) * detectionMultiplier, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Effective midcourse detection probability (base × ASAT penalty):</span>
+          <span class="value">${fmt(params.pDetectTrack * (1 - asatDetectPenalty), 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Effective terminal detection probability (ground-based radars; unaffected by space-layer ASAT):</span>
+          <span class="value">${fmt(params.pDetectTrack, 2)}</span>
         </div>
 
         <div class="results-input-group-label">Ground-Based Midcourse Interceptors</div>
@@ -282,6 +304,10 @@ export function renderResultsContent(params, result) {
         <div class="result-item">
           <span class="label">Hypothetical space-based kinetic midcourse interceptor kill probability:</span>
           <span class="value">${fmt(pkMidcourseSpaceKinetic, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Effective midcourse space kinetic Pk (after ASAT Pk penalty):</span>
+          <span class="value">${fmt(pkMidcourseSpaceKinetic * (1 - asatSpacePkPenalty), 2)}</span>
         </div>
         <div class="result-item">
           <span class="label">Hypothetical space-based directed-energy midcourse interceptor platforms in orbit:</span>

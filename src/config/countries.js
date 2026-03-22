@@ -109,6 +109,8 @@ export const COUNTRIES = {
       nAsatNuclear: 0,
       pAsatNuclearEffect: 0.45,
       boostEvasionPenalty: 0.05,
+      midcourseInterceptionPenalty: 0,
+      terminalInterceptionPenalty: 0,
       regionalCoverageFactor: 0.9,
     },
 
@@ -152,6 +154,8 @@ export const COUNTRIES = {
       nAsatNuclear: 0,
       pAsatNuclearEffect: 0.55,
       boostEvasionPenalty: 0.10,
+      midcourseInterceptionPenalty: 0,
+      terminalInterceptionPenalty: 0,
       regionalCoverageFactor: 0.75,
     },
 
@@ -195,6 +199,8 @@ export const COUNTRIES = {
       nAsatNuclear: 0,
       pAsatNuclearEffect: 0.60,
       boostEvasionPenalty: 0.15,
+      midcourseInterceptionPenalty: 0,
+      terminalInterceptionPenalty: 0,
       regionalCoverageFactor: 0.6,
     },
   },
