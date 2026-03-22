@@ -296,6 +296,16 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     )
   );
 
+  const pConstellationDefense = clamp01(
+    parseFloat(
+      getValue(
+        "pConstellationDefense",
+        "pConstellationDefense",
+        bluePreset?.pConstellationDefense ?? 0
+      )
+    ) || 0
+  );
+
   const launchRegion = getValue(
     "launchRegion",
     "launchRegion",
@@ -513,6 +523,7 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     boostDirectedTargetsPerPlatform,
     midcourseDirectedTargetsPerPlatform,
     midcourseSpaceAvailabilityMultiplier,
+    pConstellationDefense,
     launchRegion,
     pAsatCyberEffect,
     nAsatHitToKill,
@@ -627,6 +638,7 @@ export function blueParamsHTML(d) {
   const boostDirectedTargetsPerPlatform = d.boostDirectedTargetsPerPlatform ?? 2;
   const midcourseDirectedTargetsPerPlatform = d.midcourseDirectedTargetsPerPlatform ?? 3;
   const midcourseSpaceAvailabilityPct = ((d.midcourseSpaceAvailabilityMultiplier ?? 0.30) * 100).toFixed(1);
+  const pConstellationDefense = ((d.pConstellationDefense ?? 0) * 100).toFixed(1);
   const doctrineToggleHTML = (label, param, mode) => `
       <div class="wizard-slider-row">
         <div class="wizard-slider-header">
@@ -780,6 +792,12 @@ export function blueParamsHTML(d) {
           Directed-energy systems are modeled as orbital platforms capable of multiple engagements during the phase window. Engagement opportunities are calculated as platforms x opportunities per platform x phase availability.
         </div>
         ${probSlider('Midcourse space interceptor availability (fraction of constellation able to engage)', 'midcourseSpaceAvailabilityMultiplier', midcourseSpaceAvailabilityPct, undefined, 15, 45)}
+        <hr class="wizard-phase-divider" />
+        <h5>Constellation defense</h5>
+        ${probSlider('Constellation defense effectiveness against kinetic ASAT', 'pConstellationDefense', pConstellationDefense, undefined, 0)}
+        <div class="wizard-slider-note">
+          This is a scenario assumption representing Blue's ability to intercept incoming kinetic ASAT threats (hit-to-kill and nuclear direct-ascent) before they reach the constellation. It is not a modeled fielded capability. Set to 0 (default) unless specifically analyzing a hypothetical constellation-defense architecture. Cyber/EW attacks against the space layer are not interceptable and are unaffected by this parameter.
+        </div>
       </div>
     </div>
 

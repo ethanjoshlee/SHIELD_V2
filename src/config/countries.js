@@ -72,6 +72,7 @@ export const COUNTRIES = {
       pkSpaceBoostKinetic: 0.50,
       nSpaceBoostDirected: 0,
       pkSpaceBoostDirected: 0.40,
+      pConstellationDefense: 0,
       constellationAltitudeKm: 1000,
     },
   },

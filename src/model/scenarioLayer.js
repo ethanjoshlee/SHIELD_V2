@@ -82,16 +82,21 @@ export function buildBoostScenario(params) {
   const nAsatNuclear = Math.floor(asFiniteNonNegative(params.nAsatNuclear, 0));
   const pAsatNuclearEffect = asProbability(params.pAsatNuclearEffect, 0);
 
+  // Blue constellation defense: fraction of kinetic ASAT attempts neutralized before reaching orbit.
+  const pConstellationDefense = asProbability(params.pConstellationDefense, 0);
+  const effectiveHitToKillN = nAsatHitToKill * (1 - pConstellationDefense);
+  const effectiveNuclearN   = nAsatNuclear   * (1 - pConstellationDefense);
+
   const hitToKillAvailabilityEffect = independentTrialsEffect(
     pAsatHitToKill,
-    nAsatHitToKill
+    effectiveHitToKillN
   );
   const hitToKillDetectionEffect = clamp01(
     hitToKillAvailabilityEffect * ASAT_MODEL_FACTORS.hitToKillDetectionFactor
   );
   const nuclearSuccessFraction = independentTrialsEffect(
     pAsatNuclearEffect,
-    nAsatNuclear
+    effectiveNuclearN
   );
   const nuclearAvailabilityEffect = Math.min(
     0.95,

@@ -37,6 +37,7 @@
   "boostDirectedTargetsPerPlatform": 2,
   "midcourseDirectedTargetsPerPlatform": 3,
   "midcourseSpaceAvailabilityMultiplier": 0.30,
+  "pConstellationDefense": 0,
   "launchRegion": "default",
   "pAsatCyberEffect": 0.18,
   "nAsatHitToKill": 24,

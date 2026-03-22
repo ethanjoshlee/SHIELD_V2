@@ -133,6 +133,7 @@ export function renderResultsContent(params, result) {
     result.effectiveMidcourseSpaceInterceptorsAvailable ?? 0;
   const asatDetectPenalty = params.asatDetectPenalty ?? params.countermeasures?.asatDetectPenalty ?? 0;
   const asatSpacePkPenalty = params.asatSpacePkPenalty ?? params.countermeasures?.asatSpacePkPenalty ?? 0;
+  const pConstellationDefense = params.pConstellationDefense ?? 0;
   const boostEvasionPenalty = params.boostEvasionPenalty ?? 0;
   const midcourseInterceptionPenalty = params.midcourseInterceptionPenalty ?? 0;
   const terminalInterceptionPenalty = params.terminalInterceptionPenalty ?? 0;
@@ -218,6 +219,18 @@ export function renderResultsContent(params, result) {
         <div class="result-item">
           <span class="label">ASAT space-interceptor kill-probability penalty:</span>
           <span class="value">${fmt(asatSpacePkPenalty, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Constellation defense effectiveness against kinetic ASAT:</span>
+          <span class="value">${fmt(pConstellationDefense, 2)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Effective h2k ASAT attempts (after constellation defense):</span>
+          <span class="value">${fmt(nAsatHitToKill * (1 - pConstellationDefense), 1)}</span>
+        </div>
+        <div class="result-item">
+          <span class="label">Effective nuclear ASAT attempts (after constellation defense):</span>
+          <span class="value">${fmt(nAsatNuclear * (1 - pConstellationDefense), 1)}</span>
         </div>
 
         <div class="results-input-group-label">Sensors and Detection</div>
