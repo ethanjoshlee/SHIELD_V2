@@ -4,7 +4,6 @@
 
 import { fmt } from '../utils/format.js';
 import { renderHistogramHTML } from './charts.js';
-import { buildBoostScenario } from '../model/scenarioLayer.js';
 import { MIDCOURSE_SPACE_AVAILABILITY } from '../model/simulationEngine.js';
 import { LAUNCH_REGION_PRESETS } from '../config/launchRegions.js';
 import { DELIVERED_KILOTONS_BENCHMARKS } from './deliveredKilotonsBenchmarks.js';
@@ -118,22 +117,13 @@ export function renderResultsContent(params, result) {
   const midcourseSpaceAvailabilityMultiplier =
     params.midcourseSpaceAvailabilityMultiplier ?? MIDCOURSE_SPACE_AVAILABILITY;
   const launchRegion = params.launchRegion ?? 'default';
-  const boostScenario = buildBoostScenario(params);
-  const asatEffects = boostScenario.asatEffects ?? {};
-  const pAsatCyberEffect = params.pAsatCyberEffect ?? asatEffects.pAsatCyberEffect ?? 0;
-  const nAsatHitToKill = params.nAsatHitToKill ?? asatEffects.nAsatHitToKill ?? 0;
-  const pAsatHitToKill = params.pAsatHitToKill ?? asatEffects.pAsatHitToKill ?? 0;
-  const nAsatNuclear = params.nAsatNuclear ?? asatEffects.nAsatNuclear ?? 0;
-  const pAsatNuclearEffect = params.pAsatNuclearEffect ?? asatEffects.pAsatNuclearEffect ?? 0;
-  const availabilityMultiplier = asatEffects.availabilityMultiplier ?? boostScenario.availabilityMultiplier ?? 1;
-  const detectionMultiplier = asatEffects.detectionMultiplier ?? boostScenario.detectionMultiplier ?? 1;
+  const asatSensingPenalty = params.asatSensingPenalty ?? 0;
+  const asatAvailabilityPenalty = params.asatAvailabilityPenalty ?? 0;
+  const asatPkPenalty = params.asatPkPenalty ?? 0;
   const deployedMidcourseSpaceInterceptors =
     result.deployedMidcourseSpaceInterceptors ?? (nMidcourseSpaceKinetic + nMidcourseSpaceLaser);
   const effectiveMidcourseSpaceInterceptorsAvailable =
     result.effectiveMidcourseSpaceInterceptorsAvailable ?? 0;
-  const asatDetectPenalty = params.asatDetectPenalty ?? params.countermeasures?.asatDetectPenalty ?? 0;
-  const asatSpacePkPenalty = params.asatSpacePkPenalty ?? params.countermeasures?.asatSpacePkPenalty ?? 0;
-  const pConstellationDefense = params.pConstellationDefense ?? 0;
   const boostEvasionPenalty = params.boostEvasionPenalty ?? 0;
   const midcourseInterceptionPenalty = params.midcourseInterceptionPenalty ?? 0;
   const terminalInterceptionPenalty = params.terminalInterceptionPenalty ?? 0;
@@ -193,44 +183,16 @@ export function renderResultsContent(params, result) {
 
         <div class="results-input-group-label">Counterspace Attack</div>
         <div class="result-item">
-          <span class="label">Cyber / EW disruption effectiveness against the space layer:</span>
-          <span class="value">${fmt(pAsatCyberEffect, 2)}</span>
+          <span class="label">Space-layer sensing and cueing degradation:</span>
+          <span class="value">${fmt(asatSensingPenalty, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Direct-ascent hit-to-kill ASAT attempts:</span>
-          <span class="value">${nAsatHitToKill}</span>
+          <span class="label">Space-based interceptor availability degradation:</span>
+          <span class="value">${fmt(asatAvailabilityPenalty, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Direct-ascent hit-to-kill ASAT effectiveness:</span>
-          <span class="value">${fmt(pAsatHitToKill, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Nuclear direct-ascent ASAT attacks:</span>
-          <span class="value">${nAsatNuclear}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Nuclear direct-ascent ASAT effectiveness:</span>
-          <span class="value">${fmt(pAsatNuclearEffect, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Battle-network detection and cueing degradation penalty:</span>
-          <span class="value">${fmt(asatDetectPenalty, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">ASAT space-interceptor kill-probability penalty:</span>
-          <span class="value">${fmt(asatSpacePkPenalty, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Constellation defense effectiveness against kinetic ASAT:</span>
-          <span class="value">${fmt(pConstellationDefense, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Effective h2k ASAT attempts (after constellation defense):</span>
-          <span class="value">${fmt(nAsatHitToKill * (1 - pConstellationDefense), 1)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Effective nuclear ASAT attempts (after constellation defense):</span>
-          <span class="value">${fmt(nAsatNuclear * (1 - pConstellationDefense), 1)}</span>
+          <span class="label">Space-based interceptor effectiveness degradation:</span>
+          <span class="value">${fmt(asatPkPenalty, 2)}</span>
         </div>
 
         <div class="results-input-group-label">Sensors and Detection</div>
@@ -251,19 +213,11 @@ export function renderResultsContent(params, result) {
           <span class="value">These global Blue sensing/tracking/discrimination assumptions are upstream of interceptor engagement. Midcourse outcomes are especially sensitive to warhead/decoy discrimination quality.</span>
         </div>
         <div class="result-item">
-          <span class="label">Boost-phase detection/tracking multiplier (scenario-layer ASAT effect):</span>
-          <span class="value">${fmt(detectionMultiplier, 2)}</span>
+          <span class="label">Effective boost/midcourse detection (base × sensing penalty):</span>
+          <span class="value">${fmt(params.pDetectTrack * (1 - asatSensingPenalty), 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Effective boost-phase detection probability (base × ASAT penalty × scenario multiplier):</span>
-          <span class="value">${fmt(params.pDetectTrack * (1 - asatDetectPenalty) * detectionMultiplier, 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Effective midcourse detection probability (base × ASAT penalty):</span>
-          <span class="value">${fmt(params.pDetectTrack * (1 - asatDetectPenalty), 2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="label">Effective terminal detection probability (ground-based radars; unaffected by space-layer ASAT):</span>
+          <span class="label">Effective terminal detection (ground-based radars; unaffected):</span>
           <span class="value">${fmt(params.pDetectTrack, 2)}</span>
         </div>
 
@@ -319,8 +273,8 @@ export function renderResultsContent(params, result) {
           <span class="value">${fmt(pkMidcourseSpaceKinetic, 2)}</span>
         </div>
         <div class="result-item">
-          <span class="label">Effective midcourse space kinetic Pk (after ASAT Pk penalty):</span>
-          <span class="value">${fmt(pkMidcourseSpaceKinetic * (1 - asatSpacePkPenalty), 2)}</span>
+          <span class="label">Effective midcourse space kinetic Pk (after ASAT effectiveness penalty):</span>
+          <span class="value">${fmt(pkMidcourseSpaceKinetic * (1 - asatPkPenalty), 2)}</span>
         </div>
         <div class="result-item">
           <span class="label">Hypothetical space-based directed-energy midcourse interceptor platforms in orbit:</span>
@@ -355,8 +309,8 @@ export function renderResultsContent(params, result) {
           <span class="value">${effectiveMidcourseSpaceInterceptorsAvailable}</span>
         </div>
         <div class="result-item">
-          <span class="label">Space-based boost interceptor availability multiplier:</span>
-          <span class="value">${fmt(availabilityMultiplier, 2)}</span>
+          <span class="label">Space-based interceptor availability (after ASAT degradation):</span>
+          <span class="value">${fmt(1 - asatAvailabilityPenalty, 2)}</span>
         </div>
 
         <div class="results-input-group-label">Hypothetical Terminal Interceptors</div>

@@ -11,8 +11,6 @@ import { generateTargets, generateMissiles, expandToWarheadsAndDecoys } from './
 import { classifyTarget, engageWithType } from './engagement.js';
 import {
   applyBoostEvasion,
-  applyAsatDetectPenalty,
-  applyAsatPkPenalty,
   isSpaceBased,
   sortByPriority,
 } from './rules.js';
@@ -301,11 +299,9 @@ function runLegacyTrial(params) {
     };
   }
 
-  const pDetectTrack = params.pDetectTrack;
-  // Space-layer detection degradation is applied to boost phase only.
-  const pDetectTrackBoost = clamp01(
-    pDetectTrack * (boostScenario.detectionMultiplier ?? 1)
-  );
+  const asatSensingPenalty = params.asatSensingPenalty ?? 0;
+  const pDetectTrack = clamp01(params.pDetectTrack * (1 - asatSensingPenalty));
+  const pDetectTrackBoost = pDetectTrack;
   const pkUnified = clamp01(params.pkWarhead);
 
   // Continuous scenario values become discrete pools only at engagement resolution.
@@ -431,19 +427,16 @@ function runLegacyTrial(params) {
 // ---------------------------------------------------------------------------
 
 function runMultiPhaseTrial(params) {
-  // --- ASAT effects ---
-  const asatDetectPenalty = params.countermeasures?.asatDetectPenalty ?? 0;
-  const asatSpacePkPenalty = params.countermeasures?.asatSpacePkPenalty ?? 0;
+  // --- ASAT / counterspace effects (outcome-based penalties) ---
+  const asatSensingPenalty = params.asatSensingPenalty ?? 0;
+  const asatPkPenalty = params.asatPkPenalty ?? 0;
   const midcourseInterceptionPenalty = params.midcourseInterceptionPenalty ?? 0;
   const terminalInterceptionPenalty = params.terminalInterceptionPenalty ?? 0;
-  const pDetectTrack = applyAsatDetectPenalty(params.pDetectTrack, asatDetectPenalty);
-  const boostScenario = buildBoostScenario(params);
-  // Space-layer detection degradation is applied to boost phase only.
-  const pDetectTrackBoost = clamp01(
-    pDetectTrack * (boostScenario.detectionMultiplier ?? 1)
-  );
-  // Terminal detection uses ground-based radars (UEWR, TPY-2) which are unaffected by space-layer ASAT.
+  // Boost and midcourse detection degraded by sensing penalty; terminal unaffected (ground-based radars).
+  const pDetectTrack = clamp01(params.pDetectTrack * (1 - asatSensingPenalty));
+  const pDetectTrackBoost = pDetectTrack;
   const pDetectTrackTerminal = params.pDetectTrack;
+  const boostScenario = buildBoostScenario(params);
   const boostDirectedTargetsPerPlatform = directedTargetsPerPlatformFrom(params);
   const midcourseDirectedTargetsPerPlatform = midcourseDirectedTargetsPerPlatformFrom(params);
   const midcourseSpaceAvailabilityMultiplier = midcourseSpaceAvailabilityMultiplierFrom(params);
@@ -484,12 +477,11 @@ function runMultiPhaseTrial(params) {
     }
 
     // Compute effective Pk.
-    // ASAT Pk penalty is retained for non-boost space layers.
     const scenarioPk = boostScenario.pkByType[type];
     const basePk = cfg.phase === "boost" && scenarioPk != null ? scenarioPk : cfg.pk;
     let pk = basePk;
     if (isSpaceBased(type) && cfg.phase !== "boost") {
-      pk = applyAsatPkPenalty(pk, asatSpacePkPenalty);
+      pk = clamp01(pk * (1 - asatPkPenalty));
     }
     if (cfg.phase === "terminal") {
       pk = clamp01(pk * (1 - terminalInterceptionPenalty));

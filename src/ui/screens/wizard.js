@@ -148,10 +148,6 @@ function resolveRedPresetParamValue(redPreset, param, redSummary) {
       return redSummary?.kilotonsPerWarhead;
     case 'boostEvasionPenalty':
       return redSummary?.boostEvasionPenalty;
-    case 'asatDetectPenalty':
-      return redPreset.countermeasures?.asatDetectPenalty;
-    case 'asatSpacePkPenalty':
-      return redPreset.countermeasures?.asatSpacePkPenalty;
     default:
       return undefined;
   }

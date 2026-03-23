@@ -12,22 +12,6 @@ export function applyBoostEvasion(pk, boostEvasion) {
 }
 
 /**
- * Apply ASAT penalty to detection/tracking probability.
- * Multiplicative: effectiveP = pDetect * (1 - penalty)
- */
-export function applyAsatDetectPenalty(pDetect, asatDetectPenalty) {
-  return clamp01(pDetect * (1 - asatDetectPenalty));
-}
-
-/**
- * Apply ASAT penalty to space-based interceptor Pk.
- * Multiplicative: effectivePk = pk * (1 - penalty)
- */
-export function applyAsatPkPenalty(pk, asatSpacePkPenalty) {
-  return clamp01(pk * (1 - asatSpacePkPenalty));
-}
-
-/**
  * Returns true if an interceptor type is space-based (affected by ASAT).
  */
 export function isSpaceBased(interceptorType) {

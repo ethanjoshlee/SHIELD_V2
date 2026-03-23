@@ -43,15 +43,10 @@ export const DEFAULTS = {
   boostDirectedTargetsPerPlatform: 2,
   midcourseDirectedTargetsPerPlatform: 3,
   midcourseSpaceAvailabilityMultiplier: 0.30,
-  pConstellationDefense: 0,
   launchRegion: "default",
-  pAsatCyberEffect: 0.18,
-  nAsatHitToKill: 24,
-  pAsatHitToKill: 0.40,
-  nAsatNuclear: 0,
-  pAsatNuclearEffect: 0.55,
-  asatDetectPenalty: 0.0,
-  asatSpacePkPenalty: 0.0,
+  asatSensingPenalty: 0,
+  asatAvailabilityPenalty: 0,
+  asatPkPenalty: 0,
   boostEvasionPenalty: 0.0,
   midcourseInterceptionPenalty: 0,
   terminalInterceptionPenalty: 0,
@@ -64,5 +59,5 @@ export const DEFAULTS = {
   // pDecoyBurnup: 0.7,
   // interceptors: { ... },    // per-type: { deployed, pk, costPerUnit_M, phase }
   // missileClasses: { ... },  // per-class: { count, mirvsPerMissile, decoysPerWarhead, yieldKt, boostEvasion }
-  // countermeasures: { asatType, asatDetectPenalty, asatSpacePkPenalty },
+  // countermeasures: { asatType },
 };

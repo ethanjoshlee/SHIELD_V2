@@ -296,85 +296,35 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     )
   );
 
-  const pConstellationDefense = clamp01(
-    parseFloat(
-      getValue(
-        "pConstellationDefense",
-        "pConstellationDefense",
-        bluePreset?.pConstellationDefense ?? 0
-      )
-    ) || 0
-  );
-
   const launchRegion = getValue(
     "launchRegion",
     "launchRegion",
     redPreset?.launchRegion ?? "default"
   );
-  const pAsatCyberEffect = clamp01(
+  const asatSensingPenalty = clamp01(
     parseFloat(
       getValue(
-        "pAsatCyberEffect",
-        "pAsatCyberEffect",
-        redPreset?.pAsatCyberEffect ?? 0.18
+        "asatSensingPenalty",
+        "asatSensingPenalty",
+        redPreset?.asatSensingPenalty ?? 0
       )
     ) || 0
   );
-  const nAsatHitToKill = Math.max(
-    0,
-    parseInt(
-      getValue(
-        "nAsatHitToKill",
-        "nAsatHitToKill",
-        redPreset?.nAsatHitToKill ?? 24
-      ),
-      10
-    ) || 0
-  );
-  const pAsatHitToKill = clamp01(
+  const asatAvailabilityPenalty = clamp01(
     parseFloat(
       getValue(
-        "pAsatHitToKill",
-        "pAsatHitToKill",
-        redPreset?.pAsatHitToKill ?? 0.40
+        "asatAvailabilityPenalty",
+        "asatAvailabilityPenalty",
+        redPreset?.asatAvailabilityPenalty ?? 0
       )
     ) || 0
   );
-  const nAsatNuclear = Math.max(
-    0,
-    parseInt(
-      getValue(
-        "nAsatNuclear",
-        "nAsatNuclear",
-        redPreset?.nAsatNuclear ?? 0
-      ),
-      10
-    ) || 0
-  );
-  const pAsatNuclearEffect = clamp01(
+  const asatPkPenalty = clamp01(
     parseFloat(
       getValue(
-        "pAsatNuclearEffect",
-        "pAsatNuclearEffect",
-        redPreset?.pAsatNuclearEffect ?? 0.55
-      )
-    ) || 0
-  );
-  const asatDetectPenalty = clamp01(
-    parseFloat(
-      getValue(
-        "asatDetectPenalty",
-        "asatDetectPenalty",
-        redPreset?.countermeasures?.asatDetectPenalty ?? 0
-      )
-    ) || 0
-  );
-  const asatSpacePkPenalty = clamp01(
-    parseFloat(
-      getValue(
-        "asatSpacePkPenalty",
-        "asatSpacePkPenalty",
-        redPreset?.countermeasures?.asatSpacePkPenalty ?? 0
+        "asatPkPenalty",
+        "asatPkPenalty",
+        redPreset?.asatPkPenalty ?? 0
       )
     ) || 0
   );
@@ -480,8 +430,6 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
   // as metadata only.
   const countermeasures = {
     asatType: redPreset?.countermeasures?.asatType ?? "none",
-    asatDetectPenalty,
-    asatSpacePkPenalty,
   };
 
   return {
@@ -523,15 +471,10 @@ export function readParamsFromUI(blueKey, redKey, root = document) {
     boostDirectedTargetsPerPlatform,
     midcourseDirectedTargetsPerPlatform,
     midcourseSpaceAvailabilityMultiplier,
-    pConstellationDefense,
     launchRegion,
-    pAsatCyberEffect,
-    nAsatHitToKill,
-    pAsatHitToKill,
-    nAsatNuclear,
-    pAsatNuclearEffect,
-    asatDetectPenalty,
-    asatSpacePkPenalty,
+    asatSensingPenalty,
+    asatAvailabilityPenalty,
+    asatPkPenalty,
     boostEvasionPenalty,
     midcourseInterceptionPenalty,
     terminalInterceptionPenalty,
@@ -638,7 +581,6 @@ export function blueParamsHTML(d) {
   const boostDirectedTargetsPerPlatform = d.boostDirectedTargetsPerPlatform ?? 2;
   const midcourseDirectedTargetsPerPlatform = d.midcourseDirectedTargetsPerPlatform ?? 3;
   const midcourseSpaceAvailabilityPct = ((d.midcourseSpaceAvailabilityMultiplier ?? 0.30) * 100).toFixed(1);
-  const pConstellationDefense = ((d.pConstellationDefense ?? 0) * 100).toFixed(1);
   const doctrineToggleHTML = (label, param, mode) => `
       <div class="wizard-slider-row">
         <div class="wizard-slider-header">
@@ -792,12 +734,6 @@ export function blueParamsHTML(d) {
           Directed-energy systems are modeled as orbital platforms capable of multiple engagements during the phase window. Engagement opportunities are calculated as platforms x opportunities per platform x phase availability.
         </div>
         ${probSlider('Midcourse space interceptor availability (fraction of constellation able to engage)', 'midcourseSpaceAvailabilityMultiplier', midcourseSpaceAvailabilityPct, undefined, 15, 45)}
-        <hr class="wizard-phase-divider" />
-        <h5>Constellation defense</h5>
-        ${probSlider('Constellation defense effectiveness against kinetic ASAT', 'pConstellationDefense', pConstellationDefense, undefined, 0)}
-        <div class="wizard-slider-note">
-          This is a scenario assumption representing Blue's ability to intercept incoming kinetic ASAT threats (hit-to-kill and nuclear direct-ascent) before they reach the constellation. It is not a modeled fielded capability. Set to 0 (default) unless specifically analyzing a hypothetical constellation-defense architecture. Cyber/EW attacks against the space layer are not interceptable and are unaffected by this parameter.
-        </div>
       </div>
     </div>
 
@@ -829,11 +765,9 @@ export function blueParamsHTML(d) {
 export function redParamsHTML(d) {
   const decoysPerMissile = d.decoysPerMissile ?? (d.decoysPerWarhead * d.mirvsPerMissile).toFixed(1);
   const kilotonsPerWarhead = d.kilotonsPerWarhead ?? 400;
-  const asatCyber = ((d.pAsatCyberEffect ?? 0.18) * 100).toFixed(1);
-  const asatHitToKillPk = ((d.pAsatHitToKill ?? 0.40) * 100).toFixed(1);
-  const asatNuclearPk = ((d.pAsatNuclearEffect ?? 0.55) * 100).toFixed(1);
-  const asatDetectPenalty = ((d.asatDetectPenalty ?? d.countermeasures?.asatDetectPenalty ?? 0) * 100).toFixed(1);
-  const asatSpacePkPenalty = ((d.asatSpacePkPenalty ?? d.countermeasures?.asatSpacePkPenalty ?? 0) * 100).toFixed(1);
+  const asatSensing = ((d.asatSensingPenalty ?? 0) * 100).toFixed(1);
+  const asatAvailability = ((d.asatAvailabilityPenalty ?? 0) * 100).toFixed(1);
+  const asatPk = ((d.asatPkPenalty ?? 0) * 100).toFixed(1);
   const boostEvade = ((d.boostEvasionPenalty ?? 0) * 100).toFixed(1);
   const midcourseIntercept = ((d.midcourseInterceptionPenalty ?? 0) * 100).toFixed(1);
   const terminalIntercept = ((d.terminalInterceptionPenalty ?? 0) * 100).toFixed(1);
@@ -877,22 +811,11 @@ export function redParamsHTML(d) {
     <!-- Tab 3: Counterspace -->
     <div class="wizard-tab-panel" data-tab-panel="red-counterspace">
       <div class="wizard-param-group">
-        <div class="wizard-note">The parameters below flow through two separate systems. Cyber, hit-to-kill, and nuclear ASAT effects are processed by the scenario layer and affect space-based interceptor availability and boost-phase detection. The detection and Pk penalty sliders below are independent direct overrides. Using both simultaneously compounds the effects — avoid unless intentionally modeling stacked degradation.</div>
-        ${probSlider('Cyber / EW disruption effectiveness against the space layer', 'pAsatCyberEffect', asatCyber)}
-        <div class="wizard-param-pair">
-          ${intSlider('Direct-ascent hit-to-kill ASAT attempts', 'nAsatHitToKill', 0, 1000, 1, d.nAsatHitToKill ?? 24)}
-          ${probSlider('Direct-ascent hit-to-kill ASAT effectiveness', 'pAsatHitToKill', asatHitToKillPk)}
-        </div>
-        <div class="wizard-note">Hit-to-kill effectiveness uses an independent-trials formula: cumulative Pk = 1−(1−p)^N. At N=24, p=0.40: ≈99.99% expected space-layer degradation. Verify that your N and p inputs reflect the intended level of constellation destruction.</div>
-        <div class="wizard-param-pair">
-          ${intSlider('Nuclear direct-ascent ASAT attacks', 'nAsatNuclear', 0, 1000, 1, d.nAsatNuclear ?? 0)}
-          ${probSlider('Nuclear direct-ascent ASAT effectiveness', 'pAsatNuclearEffect', asatNuclearPk)}
-        </div>
-        <div class="wizard-param-pair">
-          ${probSlider('Battle-network detection and cueing degradation penalty', 'asatDetectPenalty', asatDetectPenalty, undefined, 0)}
-          ${probSlider('ASAT space-interceptor kill-probability penalty', 'asatSpacePkPenalty', asatSpacePkPenalty, undefined, 0)}
-        </div>
-        <div class="wizard-note">The detection degradation penalty applies to boost and midcourse phase detection (space-based sensors and cueing). Terminal detection (ground-based radars: UEWR, TPY-2) is modeled separately and is not affected by space-layer ASAT.</div>
+        <div class="wizard-note">These penalties represent the aggregate outcome of Red counterspace operations (cyber/EW, kinetic ASAT, nuclear ASAT, or any combination) against Blue's space-based missile defense layer. Set each to the assumed fraction of degradation. The specific mechanism is not modeled — only the outcome matters. Terminal ground-based systems are unaffected.</div>
+        ${probSlider('Space-layer sensing and cueing degradation', 'asatSensingPenalty', asatSensing, undefined, 0)}
+        ${probSlider('Space-based interceptor availability degradation', 'asatAvailabilityPenalty', asatAvailability, undefined, 0)}
+        ${probSlider('Space-based interceptor effectiveness degradation', 'asatPkPenalty', asatPk, undefined, 0)}
+        <div class="wizard-note">Sensing degradation reduces boost and midcourse detection/tracking probability. Availability degradation reduces the number of space-based interceptors available across boost and midcourse phases. Effectiveness degradation reduces the kill probability of non-boost space interceptors. Terminal detection (ground-based radars: UEWR, TPY-2) is unaffected by all three.</div>
       </div>
     </div>
   `;
@@ -1002,24 +925,16 @@ export function renderDrawerControls(container, blueKey, redKey) {
             </select>
           </label>
           <label>
-            Cyber / EW disruption effectiveness against the space layer:
-            <input type="number" class="param-input" data-param="pAsatCyberEffect" min="0.001" max="0.999" step="0.001" value="${d.pAsatCyberEffect ?? 0.18}" />
+            Space-layer sensing and cueing degradation:
+            <input type="number" class="param-input" data-param="asatSensingPenalty" min="0" max="1" step="0.01" value="${d.asatSensingPenalty ?? 0}" />
           </label>
           <label>
-            Direct-ascent hit-to-kill ASAT attempts:
-            <input type="number" class="param-input" data-param="nAsatHitToKill" min="0" max="1000" step="1" value="${d.nAsatHitToKill ?? 24}" />
+            Space-based interceptor availability degradation:
+            <input type="number" class="param-input" data-param="asatAvailabilityPenalty" min="0" max="1" step="0.01" value="${d.asatAvailabilityPenalty ?? 0}" />
           </label>
           <label>
-            Direct-ascent hit-to-kill ASAT effectiveness:
-            <input type="number" class="param-input" data-param="pAsatHitToKill" min="0.001" max="0.999" step="0.001" value="${d.pAsatHitToKill ?? 0.40}" />
-          </label>
-          <label>
-            Nuclear direct-ascent ASAT attacks:
-            <input type="number" class="param-input" data-param="nAsatNuclear" min="0" max="1000" step="1" value="${d.nAsatNuclear ?? 0}" />
-          </label>
-          <label>
-            Nuclear direct-ascent ASAT effectiveness:
-            <input type="number" class="param-input" data-param="pAsatNuclearEffect" min="0.001" max="0.999" step="0.001" value="${d.pAsatNuclearEffect ?? 0.55}" />
+            Space-based interceptor effectiveness degradation:
+            <input type="number" class="param-input" data-param="asatPkPenalty" min="0" max="1" step="0.01" value="${d.asatPkPenalty ?? 0}" />
           </label>
           <label>
             Boost-phase survivability and evasion:
